@@ -1,16 +1,16 @@
 ---
 name: go-security-setup
-description: Installs Go security CI into a Go repo by adapting a tested canonical workflow (module verification, vet, govulncheck, tests, weekly fuzzing) and Dependabot config (Go modules and GitHub Actions). Use when the user wants security CI, govulncheck or Dependabot set up in a Go repo, or wants to change its schedule, fuzzing or failure policy.
+description: Installs Go security CI into a Go repo by adapting a tested canonical workflow (module verification, vet, govulncheck, tests, weekly fuzzing) and Dependabot config (Go modules and GitHub Actions), bumps an unpatched go.mod toolchain, and adds a SECURITY.md. Use when the user wants security CI, govulncheck, Dependabot or a security policy set up in a Go repo, or wants to change its schedule, fuzzing or failure policy.
 license: MIT
 metadata:
   author: davideimola
 ---
 
-Install the canonical security workflow and Dependabot config into the **target repo**: the repo you are running in.
+Install the canonical security workflow and Dependabot config into the **target repo**, the repo you are running in, check that each module's `go.mod` pins a patched toolchain, and add a security policy if it has none.
 
 The workflow is a **canonical asset**: [`assets/security.yml`](assets/security.yml) is tested in the CI of the repo that ships this skill, with every action pinned to a full commit SHA and read-only permissions. Your job is to **copy and adapt** it, never to write or "improve" CI yourself. Every action, SHA, version comment, permission, runner and step stays exactly as in the asset.
 
-The Dependabot config is a canonical asset too: [`assets/dependabot.yml`](assets/dependabot.yml) is schema-validated and audited with zizmor in that same CI, which also runs it. Every entry, schedule, cooldown and group stays exactly as in the asset.
+The Dependabot config is a canonical asset too: [`assets/dependabot.yml`](assets/dependabot.yml) is schema-validated and audited with zizmor in that same CI, which also runs it. Every entry, schedule, cooldown and group stays exactly as in the asset. So is the security policy, [`assets/SECURITY.md`](assets/SECURITY.md): see [Security policy](#security-policy).
 
 ## Adapted values
 
@@ -32,6 +32,38 @@ These are the only lines you change. The assets ship with the values of the repo
 The setup only ever writes its own workflow file: a new one, or on a re-run the one the saved answers name. Every other workflow in the target repo stays byte-identical, including ones with problems you notice, such as actions pinned to a tag instead of a SHA: list those problems in your report for the user to fix, and leave the file as it is.
 
 An existing workflow **covers govulncheck** when it runs `govulncheck` (the command or `golang/govulncheck-action`) on pull requests and on a schedule at least once a week, in every module directory. A run scans only the module it runs in, because `./...` stops at a nested `go.mod`: a run at the root does not scan `services/api/go.mod`.
+
+## Toolchain
+
+Standard library fixes ship only as Go toolchain releases, so a module is patched only when the toolchain its `go.mod` selects is the latest patch of a supported Go minor. The installed workflow's `setup-go` and `govulncheck` use that same toolchain.
+
+- **Selected toolchain:** the `toolchain` line's version; with no `toolchain` line, the `go` line's version (`go 1.26` selects `go1.26`, older than every `go1.26.x` patch).
+- **Supported releases:** `curl -s 'https://go.dev/dl/?mode=json'` lists the supported stable releases, newest first, each with its `version`. A minor is supported when one of them has that minor.
+
+| Status | When | Bump `toolchain` to |
+|---|---|---|
+| Patched | the selected toolchain is the latest listed patch of its minor | nothing |
+| Outdated | its minor is listed with a newer patch | the latest patch of the same minor |
+| Unsupported | its minor is not listed | the latest patch of the oldest listed minor that is not older than the `go` line |
+
+A bump changes only the `toolchain` line: replace its version, or, with no `toolchain` line, add `toolchain <version>` after the `go` line with one blank line between them, as `go mod edit -toolchain` writes it. The `go` line is the module's language version and stays as it is.
+
+## Security policy
+
+The target repo has a security policy when it has `SECURITY.md`, `.github/SECURITY.md` or `docs/SECURITY.md`. An existing policy belongs to the target repo: it stays byte-identical, and its answer is `existing` plus its path. Otherwise copy [`assets/SECURITY.md`](assets/SECURITY.md) byte for byte to `SECURITY.md` at the repo root, then change only these lines.
+
+| Value | In the asset | Set it to |
+|---|---|---|
+| Reporting line | the line starting `Report vulnerabilities`, with this repo's advisory link | the line for the answer to question 5, below |
+| Scope | the `## Scope` section, the asset's last: it describes the repo that ships this skill | removed: its heading, every line after it, and the blank line before it |
+
+The reporting line for each answer, with the parts in `<>` filled in:
+
+- GitHub private vulnerability reporting, with the target repo's `owner/repo` from `gh repo view --json nameWithOwner --jq .nameWithOwner`: `Report vulnerabilities privately through GitHub private vulnerability reporting: [open a draft advisory](https://github.com/<owner>/<repo>/security/advisories/new). Please do not open a public issue.`
+- An email address: `Report vulnerabilities privately by email to <address>. Please do not open a public issue.`
+- A URL: `Report vulnerabilities privately at <URL>. Please do not open a public issue.`
+
+The link works only once private vulnerability reporting is on: `gh api repos/<owner>/<repo>/private-vulnerability-reporting --jq .enabled` prints `true` when it is. The setup writes files only, so when it prints anything else, tell the user to turn it on in the repo's settings, under Advisories, or with `gh api -X PUT repos/<owner>/<repo>/private-vulnerability-reporting`.
 
 ## Questions
 
@@ -73,12 +105,14 @@ The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, a
    - Saved answers: read `docs/agents/go-security.md` if it exists.
    - Install path: the workflow the saved answers name under `Security workflow`, when that file exists: it is the one this skill installed, and a re-run updates it. Otherwise `.github/workflows/security.yml`, or `.github/workflows/go-security.yml` if that file already exists. If both exist, stop and tell the user: you never edit an existing workflow.
    - Existing govulncheck: search every file in `.github/workflows/` for `govulncheck`, except the install path on a re-run. For each run, note its `file:line`, its triggers, and the module directories it runs in (its `working-directory`, `work-dir` or matrix; the root when none is set).
+   - Toolchain: for each module, its `go` and `toolchain` lines and its status, as in [Toolchain](#toolchain).
+   - Security policy: the existing policy file, or none, as in [Security policy](#security-policy).
 
-   Done when you have the default branch, at least one module directory, the saved answers or their absence, an install path, and every existing govulncheck run with the modules it scans (or none found). With no `go.mod`, stop and tell the user this skill is for Go repos.
+   Done when you have the default branch, at least one module directory, the saved answers or their absence, an install path, every existing govulncheck run with the modules it scans (or none found), each module's toolchain status, and the existing policy file or its absence. With no `go.mod`, stop and tell the user this skill is for Go repos.
 
 2. **Ask the questions.** Follow [Questions](#questions).
 
-   Done when each of the five questions has an answer or was skipped by its rule. Steps 3 to 5 run only when the security workflow is installed, steps 6 and 7 only when Dependabot is.
+   Done when each of the five questions has an answer or was skipped by its rule. Steps 3 to 5 run only when the security workflow is installed, steps 6 and 7 only when Dependabot is, step 8 only when the toolchain check is, and step 9 only when a security policy is.
 
 3. **Adapt the asset.** Copy `assets/security.yml` byte for byte, then replace only the adapted values above, set from the answers. Keep the block-list style of the asset (one `- item` per line).
    - If an existing workflow covers govulncheck, offer to add only what is missing. Recommend removing the `govulncheck` step (the step is whole, from its `- name:` line to the line before the next step), so the new workflow adds module verification, vet, tests and weekly fuzzing next to the user's own govulncheck. The other choice is to keep the step and run govulncheck twice.
@@ -102,7 +136,15 @@ The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, a
 
    Done when the user has confirmed and the file is written, or you have reported that nothing was missing.
 
-8. **Save the answers.** Adapt `assets/go-security.md` as in [Answers file](#answers-file), with every answer from step 2 and the paths actually written. Show it, with its diff against the saved file on a re-run, then write it to `docs/agents/go-security.md`, creating `docs/agents/` if needed.
+8. **Check the toolchain.** Report each module's selected toolchain and its status from step 1. For each module that is not patched, show the `go.mod` diff of its bump, as in [Toolchain](#toolchain), and ask for confirmation. Then write the change and run `go test ./...` in that module, which also downloads the new toolchain.
+
+   Done when every module's status is reported, and each bump the user confirmed is written, with `git diff <module>/go.mod` showing only the `toolchain` line (and its blank line when added) and the `go test` result reported. A declined bump stays in your report as outdated or unsupported.
+
+9. **Add the security policy.** With an existing policy, tell the user its path and leave it as it is. Otherwise adapt the asset as in [Security policy](#security-policy), show the file and its diff against the asset, and ask for confirmation, as in step 4. Then write it to `SECURITY.md`. For GitHub private vulnerability reporting, also report whether it is on.
+
+   Done when the existing policy is reported and `git status --porcelain` lists none of the policy files, or the user has confirmed and `SECURITY.md` is written, with a diff against the asset showing only the reporting line changed and the `## Scope` section removed.
+
+10. **Save the answers.** Adapt `assets/go-security.md` as in [Answers file](#answers-file), with every answer from step 2 and the paths actually written. Show it, with its diff against the saved file on a re-run, then write it to `docs/agents/go-security.md`, creating `docs/agents/` if needed.
 
    Done when the file is written and a diff against the asset shows changes only after `- <Key>: ` on the lines in the answers file table.
 

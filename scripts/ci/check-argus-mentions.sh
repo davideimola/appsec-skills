@@ -32,6 +32,13 @@ else
   printf '%s\n' "$line" | grep -qF 'Toolbox mode' || fail "$audit: the Argus mention does not say Toolbox mode"
 fi
 
+# The audit's references (its tool-branch notes among them) stay tool-neutral.
+for f in "$(dirname "$audit")"/references/*; do
+  if grep -qF 'Argus' "$f"; then
+    fail "$f: names Argus; only the audit's step 4 line does"
+  fi
+done
+
 for skill in skills/*/; do
   [ "${skill}SKILL.md" = "$audit" ] && continue
   if grep -rqF 'Argus' "$skill"; then

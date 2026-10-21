@@ -26,6 +26,10 @@ _Avoid_: workflow, pipeline, process
 One problem the audit reports, with its severity, evidence, hypothesis and suggested fix.
 _Avoid_: issue, alert, vulnerability (a vulnerability is one kind of finding)
 
+**Signal**:
+Tool output that may point at a problem, such as a gosec issue. It becomes a finding only once the code at its `file:line` confirms it; otherwise it is dismissed with the reason the code gives.
+_Avoid_: alert, false positive (that is a dismissed signal)
+
 **Hypothesis**:
 What a finding claims is wrong, before a failing test confirms it.
 _Avoid_: guess, suspicion

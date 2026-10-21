@@ -55,6 +55,9 @@ jobs:
       - name: Weekly schedule, fuzz gated on it, fuzz step green on the fixture
         run: scripts/ci/check-weekly-fuzz.sh
 
+      - name: The audit runs the gosec version the fixture tracks as a direct tool dependency
+        run: scripts/ci/check-gosec-version.sh
+
       - name: Setup answers match the asset's defaults, and every other answer lints clean
         run: scripts/ci/check-setup-answers.sh
 

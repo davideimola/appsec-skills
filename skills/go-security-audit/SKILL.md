@@ -1,6 +1,6 @@
 ---
 name: go-security-audit
-description: Audits the security of a Go repo and reports findings with evidence (reachable vulnerabilities, module verification, toolchain patch level). Use when the user asks to audit or check the security of a Go repo or service, or asks whether its dependencies or Go version have known vulnerabilities.
+description: Audits the security of a Go repo and reports findings with evidence (reachable vulnerabilities, module verification, toolchain patch level, gosec static analysis). Use when the user asks to audit or check the security of a Go repo or service, or asks whether its dependencies or Go version have known vulnerabilities.
 license: MIT
 metadata:
   author: davideimola
@@ -20,10 +20,10 @@ A finding is one problem, reported with these four parts and nothing left blank:
 | Severity | When |
 |---|---|
 | Critical | `go mod verify` reports a module whose content differs from what was downloaded |
-| High | A vulnerability that `govulncheck` shows your code calling; a toolchain on a Go minor line that no longer gets security fixes |
-| Medium | A toolchain behind the latest patch release of its Go minor line |
+| High | A vulnerability that `govulncheck` shows your code calling; a toolchain on a Go minor line that no longer gets security fixes; a confirmed gosec signal that input from outside the program reaches |
+| Medium | A toolchain behind the latest patch release of its Go minor line; a gosec signal you confirmed in the code |
 
-Only what the checks below show becomes a finding. A vulnerability that `govulncheck` finds in a package or module your code does not call is **context**: count it, and leave it out of the findings.
+Only what the checks below show becomes a finding. A vulnerability that `govulncheck` finds in a package or module your code does not call is **context**: count it, and leave it out of the findings. A gosec issue is a **signal**: it becomes a finding only once the code at its `file:line` confirms it (step 5).
 
 ## Steps
 
@@ -50,12 +50,22 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
    Done when every module has its list of called vulnerabilities (possibly empty) and its unreachable count, or a recorded scan failure.
 
-5. **Report.** Write the report in the chat in this shape, with the findings ordered by severity:
+5. **Run gosec.** In each module directory, run gosec with the tool your agent provides, or from the shell as `go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 -no-fail ./...`. From the shell, run exactly that command even when the repo has gosec installed or declares its own gosec tool: that version is verified by the Go checksum database and installs nothing, so every audit runs the same checker. A tool that takes a path needs the module directory's absolute path; its structured results give each signal's `rule_id`, `severity`, `file`, `line` and `details.cwe`, and a tool error with no results is a scan failure. The shell output ends with a summary whose `Issues` line counts the signals. A `Golang errors in file` block means gosec could not load that file, so the file was not checked even when `Issues` is 0: report the block as a check that did not run for those files. `export data version` in it means this gosec version cannot read packages built by the module's Go release. Any error that stops the scan means the check did not run for the module.
+
+   Each issue, `[<file>:<line>] - <rule> (CWE-<n>): <message> (Confidence: <level>, Severity: <level>)` followed by the code around that line, is a signal to triage; gosec's own severity is not the finding's. For each one, open the code at that `file:line` and follow the flagged value back to where it comes from:
+   - **Confirmed**: the code shows the weakness is real, because a value from outside the program (a request, a file, an environment variable, an argument) reaches the flagged line, or the weakness holds whatever the input (for example a disabled TLS check). It is a finding: High when input from outside the program reaches it, Medium otherwise. Evidence: the gosec issue line, plus the `file:line` where the value enters. Hypothesis: what an attacker or a mistake can do there. Suggested fix: the code change, in one or two sentences.
+   - **Dismissed**: the code shows the value cannot carry the risk (a constant, a value already validated on every path to the line, a use that is not security-relevant). Record the rule, the `file:line` and that reason from the code.
+
+   Signals with different rules on the same `file:line` that describe one weakness are one finding that cites each rule.
+
+   Done when every module has its gosec summary, or a recorded scan failure, and every signal is confirmed or dismissed with its reason.
+
+6. **Report.** Write the report in the chat in this shape, with the findings ordered by severity:
 
    ```
    ## Go security audit
 
-   Checks: go mod verify, toolchain, govulncheck (<modules audited>)
+   Checks: go mod verify, toolchain, govulncheck, gosec <version run> (<modules audited>)
    Findings: <total> (<n> Critical, <n> High, <n> Medium)
 
    ### 1. [<Severity>] <short title> (<module>)
@@ -64,9 +74,10 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
    - Suggested fix: <the change, labelled mechanical fix when it is one>
 
    Context: govulncheck also knows <unreachable count> vulnerabilities in packages and modules this repo requires that its code does not call. They are not findings.
+   Dismissed gosec signals: <n>, each as <rule> <file:line>: <reason from the code>
    Not run: <each check that did not run, and why>
    ```
 
    When the user asks for a markdown report, write the same content to the path they give, and to `go-security-audit-<YYYY-MM-DD>.md` at the repo root when they give none. The report ends the audit: applying a suggested fix is a new request from the user.
 
-   Done when every finding from steps 2 to 4 is in the report with all four parts, the unreachable count is in the context line, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).
+   Done when every finding from steps 2 to 5 is in the report with all four parts, the unreachable count is in the context line, every dismissed gosec signal is listed with its reason, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).

@@ -62,6 +62,9 @@ jobs:
       - name: Weekly schedule, fuzz gated on it, fuzz step green on the fixture
         run: scripts/ci/check-weekly-fuzz.sh
 
+      - name: govulncheck scans with the Go version setup-go installed from the module's go.mod
+        run: scripts/ci/check-govulncheck-go-version.sh
+
       - name: The audit runs the gosec and govulncheck versions the fixture tracks as direct tool dependencies
         run: scripts/ci/check-tool-versions.sh
 

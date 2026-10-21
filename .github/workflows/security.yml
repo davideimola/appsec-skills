@@ -25,7 +25,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - id: setup-go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: ${{ matrix.module }}/go.mod
           cache-dependency-path: ${{ matrix.module }}/go.sum
@@ -46,8 +47,7 @@ jobs:
         continue-on-error: false
         uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
         with:
-          go-version-input: ""
-          go-version-file: ${{ matrix.module }}/go.mod
+          go-version-input: ${{ steps.setup-go.outputs.go-version }}
           cache-dependency-path: ${{ matrix.module }}/go.sum
           repo-checkout: false
           work-dir: ${{ matrix.module }}

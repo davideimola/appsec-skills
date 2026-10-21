@@ -49,7 +49,7 @@ jobs:
       - name: Every uses is pinned to a full commit SHA
         run: scripts/ci/check-pins.sh
 
-      - name: This repo's security workflow and Dependabot config are byte-identical to the assets
+      - name: This repo's security workflow, Dependabot config and setup answers are byte-identical to the assets
         run: scripts/ci/check-asset-copy.sh
 
       - name: Weekly schedule, fuzz gated on it, fuzz step green on the fixture
@@ -57,6 +57,9 @@ jobs:
 
       - name: The audit runs the gosec version the fixture tracks as a direct tool dependency
         run: scripts/ci/check-gosec-version.sh
+
+      - name: Setup answers match the asset's defaults, and every other answer lints clean
+        run: scripts/ci/check-setup-answers.sh
 
       - name: Dependabot config schema
         run: pipx run check-jsonschema==0.38.2 --builtin-schema vendor.dependabot .github/dependabot.yml skills/*/assets/dependabot.yml

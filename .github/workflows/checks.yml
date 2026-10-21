@@ -46,6 +46,9 @@ jobs:
       - name: This repo's security workflow is byte-identical to the asset
         run: scripts/ci/check-asset-copy.sh
 
+      - name: Weekly schedule, fuzz gated on it, fuzz step green on the fixture
+        run: scripts/ci/check-weekly-fuzz.sh
+
       - name: actionlint
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 .github/workflows/*.yml skills/*/assets/security.yml
 

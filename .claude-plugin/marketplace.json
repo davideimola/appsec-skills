@@ -13,7 +13,8 @@
       "license": "MIT",
       "skills": [
         "./skills/go-security-audit",
-        "./skills/go-security-setup"
+        "./skills/go-security-setup",
+        "./skills/verify-with-fuzz"
       ]
     }
   ]

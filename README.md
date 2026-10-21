@@ -9,8 +9,9 @@ The skills use the open [Agent Skills](https://agentskills.io) format, so they w
 | Skill | What it does | What it touches in your repo |
 |---|---|---|
 | [`go-security-setup`](skills/go-security-setup/) | Installs Go security CI: module verification, vet, `govulncheck` and tests, on every pull request and push to the default branch. Try "set up Go security CI". | Adds one new workflow file, `.github/workflows/security.yml` (or `go-security.yml` if that name is taken), after showing you the diff. It never edits an existing workflow. |
+| [`go-security-audit`](skills/go-security-audit/) | Finds security problems and reports each as a finding with severity, evidence and a suggested fix: vulnerabilities your code actually calls (`govulncheck`), module verification and an outdated Go toolchain. Try "check the security of my Go service". | Nothing. It only reads and reports; it writes a markdown report only when you ask for one. |
 
-`go-security-audit` (find security problems, with evidence) and `verify-with-fuzz` (prove a suspected bug with a failing test) are in progress and will be added to this table when they ship.
+`verify-with-fuzz` (prove a suspected bug with a failing test) is in progress and will be added to this table when it ships.
 
 ## Install
 

@@ -88,7 +88,7 @@ A grilling session on what this repo should be, starting from the brief of the t
 12. **Install:** `npx skills add davideimola/go-security-skills`, plus `.claude-plugin/marketplace.json` with `source: "./"` and an explicit list of skills. The slide shows only the `npx` command.
 13. **Argus is compatible, not a dependency.** Skills are written tool-neutral. `authz-audit` stays in Argus.
     - Argus is presented as an **MCP server in Toolbox mode** (scanners and skills, no agentic part, no LLM provider needed): a README section, plus one neutral line in the audit ("if an MCP server exposes govulncheck or gosec, for example Argus in Toolbox mode, use it instead of the shell").
-    - This is published only after an Argus release with the Tool Catalog and Toolbox mode, and a real test (skills in `~/.argus/skills/`, read by an MCP client).
+    - It is tested for real (skills in `~/.argus/skills/`, read by an MCP client). The Argus release with the Tool Catalog and Toolbox mode is done by the maintainer before the talk and does not gate this repo (revised later on 2026-10-21).
 
 ### Out of v1
 

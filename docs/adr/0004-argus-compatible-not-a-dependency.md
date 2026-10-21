@@ -4,4 +4,4 @@ The skills are written tool-neutral ("run govulncheck from the shell or with the
 
 ## Consequences
 
-- Nothing about Argus is published until an Argus release ships the Tool Catalog and Toolbox mode, and the skills have been tested in `~/.argus/skills/` through an MCP client. Until then, the README mentions only what is on main.
+- The Argus release that ships the Tool Catalog and Toolbox mode is the maintainer's job before the talk, so it does not gate this repo. The Argus mentions are tested against Argus built from main: the skills in `~/.argus/skills/`, read through an MCP client.

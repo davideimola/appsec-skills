@@ -1,6 +1,6 @@
 ---
 name: go-security-setup
-description: Installs Go security CI into a Go repo by adapting a tested canonical workflow (module verification, vet, govulncheck, tests) and Dependabot config (Go modules and GitHub Actions). Use when the user wants security CI, govulncheck or Dependabot set up in a Go repo.
+description: Installs Go security CI into a Go repo by adapting a tested canonical workflow (module verification, vet, govulncheck, tests, weekly fuzzing) and Dependabot config (Go modules and GitHub Actions). Use when the user wants security CI, govulncheck or Dependabot set up in a Go repo, or wants to change its schedule, fuzzing or failure policy.
 license: MIT
 metadata:
   author: davideimola
@@ -14,44 +14,87 @@ The Dependabot config is a canonical asset too: [`assets/dependabot.yml`](assets
 
 ## Adapted values
 
-These are the only lines you change. The assets ship with the values of the repo that tests them.
+These are the only lines you change. The assets ship with the values of the repo that tests them, which are also the default answers to the [questions](#questions).
 
 | Value | In the asset | Set it to |
 |---|---|---|
 | Default branch | `on.push.branches: [main]` | the target repo's default branch |
 | Module directories | `jobs.security.strategy.matrix.module: [testdata/fixture]` | one entry per Go module, as a path from the repo root (`.` for the root module) |
-| Weekly schedule | `on.schedule: [cron: "0 6 * * 1"]` (Monday 06:00 UTC) | the day and time the user chose, as a once-a-week cron in UTC; keep the default when they have no preference |
-| Fuzz time per target | `FUZZ_TIME: 1m` in the `Fuzz each target (weekly)` step | the duration the user chose, as a Go duration (`30s`, `5m`); keep the default when they have no preference |
+| Weekly schedule | `on.schedule: [cron: "0 6 * * 1"]` (Monday 06:00 UTC) | the answer to question 2, as a once-a-week cron in UTC |
+| Weekly fuzzing | the `Fuzz each target (weekly)` step, the asset's last step (on) | when question 3 turned fuzzing off, remove that step: its `- name:` line, every line after it, and the blank line before it |
+| Fuzz time per target | `FUZZ_TIME: 1m` in the `Fuzz each target (weekly)` step | the answer to question 3, as a Go duration (`30s`, `5m`) |
+| Failure policy | `continue-on-error: false` in the `govulncheck` step (a reachable vulnerability fails the run) | `continue-on-error: true` when question 4 chose to only report |
 | Dependabot module directories | `assets/dependabot.yml`: the `gomod` entry's `directories: [/testdata/fixture]` | one entry per Go module, as `/` plus its path (`/` for the root module) |
+
+## Questions
+
+Ask the five questions in this order, one per message, and wait for each answer before the next. Open each with its recommended answer, so the user can accept it in one word: the saved answer when the [answers file](#answers-file) exists, otherwise the default below. Action versions, runners and permissions come from the asset and are never a question.
+
+| # | Question | Default | Other answers | Skip it when |
+|---|---|---|---|---|
+| 1 | What to install: the security workflow, Dependabot, the toolchain check, a security policy | everything | any subset | never |
+| 2 | Day and time of the weekly run | Monday 06:00 UTC | any day and time; ask the user's time zone and convert to UTC | the security workflow is not installed |
+| 3 | Weekly fuzzing, and how long per fuzz target | on, `1m` | off; another Go duration | the security workflow is not installed |
+| 4 | Failure policy for a reachable vulnerability | fail the run | report only: the run shows the vulnerabilities and passes | the security workflow is not installed |
+| 5 | Where vulnerabilities are reported | GitHub private vulnerability reporting | an email address or a URL | a security policy is not installed, or the repo already has `SECURITY.md`, `.github/SECURITY.md` or `docs/SECURITY.md` |
+
+A skipped question keeps its recommended answer in the answers file, so a later run that needs it offers it again. When question 5 is skipped because a policy exists, its answer is `existing` plus that file's path in backticks.
+
+## Answers file
+
+The answers live in the target repo at `docs/agents/go-security.md`, next to the other agent docs, for people and agents (including `go-security-audit`) to read. It is a canonical asset too: copy [`assets/go-security.md`](assets/go-security.md) byte for byte, then change only the text after `- <Key>: ` on these lines.
+
+| Key | In the asset | Set it to |
+|---|---|---|
+| `Security workflow` | `yes, ` plus `.github/workflows/security.yml` in backticks | `yes, ` plus the install path in backticks, or `no` |
+| `Dependabot` | `yes, ` plus `.github/dependabot.yml` in backticks | `yes, ` plus the Dependabot file in backticks, or `no` |
+| `Toolchain check` | `yes` | `yes` or `no` |
+| `Security policy` | `yes, ` plus `SECURITY.md` in backticks | `yes, ` plus the policy file in backticks, or `no` |
+| `Weekly run` | ``Monday 06:00 UTC, cron `0 6 * * 1` `` | the day and UTC time, then `, cron ` and the cron in backticks |
+| `Fuzzing` | `on` | `on` or `off` |
+| `Fuzz time per target` | `1m` in backticks | the duration in backticks |
+| `Reachable vulnerability` | `fail` | `fail` or `report` |
+| `Channel` | `GitHub private vulnerability reporting` | the same, `email ` plus the address, the URL, or `existing` plus the policy file in backticks |
+
+The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, and you never edit either of them.
 
 ## Steps
 
 1. **Read the target repo.**
    - Default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix. If neither answers, ask the user.
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
-   - Install path: `.github/workflows/security.yml`. If that file already exists, use `.github/workflows/go-security.yml`. If both exist, stop and tell the user: you never edit an existing workflow.
+   - Saved answers: read `docs/agents/go-security.md` if it exists.
+   - Install path: the workflow the saved answers name under `Security workflow`, when that file exists: it is the one this skill installed, and a re-run updates it. Otherwise `.github/workflows/security.yml`, or `.github/workflows/go-security.yml` if that file already exists. If both exist, stop and tell the user: you never edit an existing workflow.
 
-   Done when you have the default branch, at least one module directory, and a free install path. With no `go.mod`, stop and tell the user this skill is for Go repos.
+   Done when you have the default branch, at least one module directory, the saved answers or their absence, and an install path. With no `go.mod`, stop and tell the user this skill is for Go repos.
 
-2. **Adapt the asset.** Copy `assets/security.yml` byte for byte, then replace only the adapted values above. Keep the block-list style of the asset (one `- item` per line).
+2. **Ask the questions.** Follow [Questions](#questions).
+
+   Done when each of the five questions has an answer or was skipped by its rule. Steps 3 to 5 run only when the security workflow is installed, steps 6 and 7 only when Dependabot is.
+
+3. **Adapt the asset.** Copy `assets/security.yml` byte for byte, then replace only the adapted values above, set from the answers. Keep the block-list style of the asset (one `- item` per line).
 
    Done when a diff between the asset and your adapted file shows changes only on the lines of the adapted values above.
 
-3. **Show and confirm.** Show the user the full file you will write, its path, and the diff against the asset from step 2. Ask for confirmation.
+4. **Show and confirm.** Show the user the full file you will write, its path, and the diff against the asset from step 3; on a re-run, also the diff against the installed file. Ask for confirmation.
 
    Done when the user has confirmed. If they ask for any change outside the adapted values, explain that the rest of the workflow is the tested asset and leave it as it is.
 
-4. **Write and check.** Write the file to the install path. Then, in each module directory, run `go mod verify`, `go vet ./...` and `go test ./...`, and run `govulncheck ./...` from the shell or with the tool your agent provides.
+5. **Write and check.** Write the file to the install path. Then, in each module directory, run `go mod verify`, `go vet ./...` and `go test ./...`, and run `govulncheck ./...` from the shell or with the tool your agent provides.
 
    Done when the file is written and you have reported, per module, which of those commands passed and which failed. A failure here is what the workflow will also report on its first run, so show the output; it does not undo the install.
 
-5. **Adapt or merge the Dependabot config.** Look for `.github/dependabot.yml`, then `.github/dependabot.yaml`.
+6. **Adapt or merge the Dependabot config.** Look for `.github/dependabot.yml`, then `.github/dependabot.yaml`.
    - **No config:** copy `assets/dependabot.yml` byte for byte to `.github/dependabot.yml`, then set the `gomod` entry's `directories` to the module directories from step 1 (see the adapted values). Done when a diff against the asset shows changes only on the `directories` lines.
    - **Existing config:** follow [Merging into an existing config](#merging-into-an-existing-config). Done when every module directory and `/` for GitHub Actions is covered, and `git diff` of the file shows only added lines.
 
-6. **Show, confirm and write.** Show the user the Dependabot file and its diff (against the asset for a new config, against the existing file for a merge), and ask for confirmation, as in step 3. Then write it. If nothing was missing, tell the user the existing config already covers both ecosystems and write nothing.
+7. **Show, confirm and write.** Show the user the Dependabot file and its diff (against the asset for a new config, against the existing file for a merge), and ask for confirmation, as in step 4. Then write it. If nothing was missing, tell the user the existing config already covers both ecosystems and write nothing.
 
    Done when the user has confirmed and the file is written, or you have reported that nothing was missing.
+
+8. **Save the answers.** Adapt `assets/go-security.md` as in [Answers file](#answers-file), with every answer from step 2 and the paths actually written. Show it, with its diff against the saved file on a re-run, then write it to `docs/agents/go-security.md`, creating `docs/agents/` if needed.
+
+   Done when the file is written and a diff against the asset shows changes only after `- <Key>: ` on the lines in the answers file table.
 
 ## Merging into an existing config
 
@@ -63,7 +106,7 @@ The existing config belongs to the target repo: every line in it, including its 
 
 ## What the workflow does
 
-On every pull request, every push to the default branch and once a week, for each module: check out the code without persisting credentials, install the Go version from that module's `go.mod`, verify modules, vet, run `govulncheck` with that same Go version, and run the tests (which also run fuzz seed corpora). The weekly run catches advisories published after the last change, and it also fuzzes each fuzz target in the module for the fuzz time; on a failure it prints the failing input so the user can commit it as a regression test. Pull request and push runs never fuzz beyond the seed corpora. It uses only `actions/checkout`, `actions/setup-go`, `golang/govulncheck-action` and the `go` command.
+On every pull request, every push to the default branch and once a week, for each module: check out the code without persisting credentials, install the Go version from that module's `go.mod`, verify modules, vet, run `govulncheck` with that same Go version, and run the tests (which also run fuzz seed corpora). A reachable vulnerability fails the run, or with the report-only policy is shown and lets the run pass. The weekly run catches advisories published after the last change, and, unless fuzzing is off, it also fuzzes each fuzz target in the module for the fuzz time; on a failure it prints the failing input so the user can commit it as a regression test. Pull request and push runs never fuzz beyond the seed corpora. It uses only `actions/checkout`, `actions/setup-go`, `golang/govulncheck-action` and the `go` command.
 
 ## What the Dependabot config does
 

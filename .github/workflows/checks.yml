@@ -81,3 +81,6 @@ jobs:
 
       - name: Property fails on the vulnerable authz and passes on the fixed one
         run: scripts/ci/check-fuzz-catches-vulnerable.sh
+
+      - name: Skill reference examples quote the proven fixture code
+        run: scripts/ci/check-reference-examples.sh

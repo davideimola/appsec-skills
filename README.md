@@ -29,6 +29,8 @@ claude plugin install go-security-skills@go-security-skills
 
 Or copy a single folder from [`skills/`](skills/) into your agent's skills folder: each skill is self-contained.
 
+Each release is listed on the [releases page](https://github.com/davideimola/go-security-skills/releases) and in the changelog; the Claude Code plugin updates only when a new release is cut.
+
 ## Using the skills with Argus
 
 The skills run the scanners from the shell, or with the tools your agent provides. [Argus](https://github.com/argusappsec/argus) in Toolbox mode is one way to provide them: an MCP server that runs the scanners installed on its host (`run_govulncheck` for `govulncheck`, `run_gosec` for gosec) and serves your skills to any MCP client, with no LLM provider needed. Your agent does the reasoning; Argus runs the tools.

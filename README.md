@@ -39,7 +39,7 @@ Put the skills in Argus's user skills folder, restart the daemon, and connect yo
 cp -R skills/* ~/.argus/skills/
 ```
 
-Your agent then lists and reads the skills through Argus (`list_skills`, `read_skill`, or its prompt menu), and the audit uses Argus's `govulncheck` tool when it is available. Argus scans code on the machine it runs on, so run it where your code is checked out, with `govulncheck` and gosec installed there. Argus is optional: without it the skills work the same from the shell.
+Your agent then lists and reads the skills through Argus (`list_skills`, `read_skill`, or its prompt menu), and the audit uses Argus's `run_govulncheck` and `run_gosec` tools when they are available. Argus scans code on the machine it runs on, so run it where your code is checked out, with `govulncheck` and gosec installed there. Argus is optional: without it the skills work the same from the shell.
 
 ## How the output is tested
 

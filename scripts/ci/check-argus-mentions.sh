@@ -14,6 +14,11 @@ else
   for phrase in 'Toolbox mode' 'MCP server' 'govulncheck' 'gosec' 'LLM provider'; do
     printf '%s\n' "$section" | grep -qF "$phrase" || fail "$readme: Argus section does not mention: $phrase"
   done
+  # The audit takes both scanners from the agent's tools (steps 4 and 5).
+  uses=$(printf '%s\n' "$section" | grep -F 'the audit uses' || true)
+  for tool in run_govulncheck run_gosec; do
+    printf '%s\n' "$uses" | grep -qF "$tool" || fail "$readme: the Argus section's 'the audit uses' sentence does not name $tool"
+  done
 fi
 
 audit=$audit_skill

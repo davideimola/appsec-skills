@@ -18,6 +18,13 @@ These are the only lines you change. The asset ships with the values of the repo
 |---|---|---|
 | Default branch | `on.push.branches: [main]` | the target repo's default branch |
 | Module directories | `jobs.security.strategy.matrix.module: [testdata/fixture]` | one entry per Go module, as a path from the repo root (`.` for the root module) |
+| govulncheck step | the step named `govulncheck` | kept, or removed whole when an existing workflow already covers govulncheck (see below) and the user chooses to keep that one |
+
+## Existing workflows
+
+The setup only ever adds its own file. Every workflow already in the target repo stays byte-identical, including ones with problems you notice, such as actions pinned to a tag instead of a SHA: list those problems in your report for the user to fix, and leave the file as it is.
+
+An existing workflow **covers govulncheck** when it runs `govulncheck` (the command or `golang/govulncheck-action`) on pull requests in every module directory. A run scans only the module it runs in, because `./...` stops at a nested `go.mod`: a run at the root does not scan `services/api/go.mod`.
 
 ## Steps
 
@@ -25,21 +32,24 @@ These are the only lines you change. The asset ships with the values of the repo
    - Default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix. If neither answers, ask the user.
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
    - Install path: `.github/workflows/security.yml`. If that file already exists, use `.github/workflows/go-security.yml`. If both exist, stop and tell the user: you never edit an existing workflow.
+   - Existing govulncheck: search every file in `.github/workflows/` for `govulncheck`. For each run, note its `file:line`, its triggers, and the module directories it runs in (its `working-directory`, `work-dir` or matrix; the root when none is set).
 
-   Done when you have the default branch, at least one module directory, and a free install path. With no `go.mod`, stop and tell the user this skill is for Go repos.
+   Done when you have the default branch, at least one module directory, a free install path, and every existing govulncheck run with the modules it scans (or none found). With no `go.mod`, stop and tell the user this skill is for Go repos.
 
 2. **Adapt the asset.** Copy `assets/security.yml` byte for byte, then replace only the adapted values above. Keep the block-list style of the asset (one `- item` per line).
+   - If an existing workflow covers govulncheck, offer to add only what is missing. Recommend removing the `govulncheck` step (the step is whole, from its `- name:` line to the line before the next step), so the new workflow adds module verification, vet and tests next to the user's own govulncheck. The other choice is to keep the step and run govulncheck twice.
+   - If existing govulncheck runs miss some modules or pull requests, keep the step, and tell the user which modules the existing runs do not scan.
 
-   Done when a diff between the asset and your adapted file shows changes only on the default-branch and module lines.
+   Done when a diff between the asset and your adapted file shows changes only on the default-branch and module lines, plus the removed `govulncheck` step when the user chose that.
 
-3. **Show and confirm.** Show the user the full file you will write, its path, and the diff against the asset from step 2. Ask for confirmation.
+3. **Show and confirm.** Show the user the existing govulncheck runs you found, the full file you will write, its path, and the diff against the asset from step 2. Ask for confirmation.
 
    Done when the user has confirmed. If they ask for any change outside the adapted values, explain that the rest of the workflow is the tested asset and leave it as it is.
 
 4. **Write and check.** Write the file to the install path. Then, in each module directory, run `go mod verify`, `go vet ./...` and `go test ./...`, and run `govulncheck ./...` from the shell or with the tool your agent provides.
 
-   Done when the file is written and you have reported, per module, which of those commands passed and which failed. A failure here is what the workflow will also report on its first run, so show the output; it does not undo the install.
+   Done when the file is written, `git status --porcelain .github/` lists only that new file, and you have reported, per module, which of those commands passed and which failed. A failure here is what the workflow will also report on its first run, so show the output; it does not undo the install.
 
 ## What the workflow does
 
-On every pull request and every push to the default branch, for each module: check out the code without persisting credentials, install the Go version from that module's `go.mod`, verify modules, vet, run `govulncheck` with that same Go version, and run the tests (which also run fuzz seed corpora). It uses only `actions/checkout`, `actions/setup-go`, `golang/govulncheck-action` and the `go` command.
+On every pull request and every push to the default branch, for each module: check out the code without persisting credentials, install the Go version from that module's `go.mod`, verify modules, vet, run `govulncheck` with that same Go version (unless the user kept their own), and run the tests (which also run fuzz seed corpora). It uses only `actions/checkout`, `actions/setup-go`, `golang/govulncheck-action` and the `go` command.

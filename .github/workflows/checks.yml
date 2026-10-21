@@ -24,6 +24,9 @@ jobs:
       - name: Manifest, README and licenses list exactly the published skills
         run: scripts/ci/check-published-skills.sh
 
+      - name: Argus appears only in the README section and once in the audit
+        run: scripts/ci/check-argus-mentions.sh
+
       - name: Agent Skills validator
         run: |
           for dir in skills/*/; do

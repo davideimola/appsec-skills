@@ -30,6 +30,18 @@ claude plugin install go-security-skills@go-security-skills
 
 Or copy a single folder from [`skills/`](skills/) into your agent's skills folder: each skill is self-contained.
 
+## Using the skills with Argus
+
+The skills run the scanners from the shell, or with the tools your agent provides. [Argus](https://github.com/argusappsec/argus) in Toolbox mode is one way to provide them: an MCP server that runs the scanners installed on its host (`run_govulncheck` for `govulncheck`, `run_gosec` for gosec) and serves your skills to any MCP client, with no LLM provider needed. Your agent does the reasoning; Argus runs the tools.
+
+Put the skills in Argus's user skills folder, restart the daemon, and connect your agent to Argus's `/mcp` endpoint:
+
+```sh
+cp -R skills/* ~/.argus/skills/
+```
+
+Your agent then lists and reads the skills through Argus (`list_skills`, `read_skill`, or its prompt menu), and the audit uses Argus's `govulncheck` tool when it is available. Argus scans code on the machine it runs on, so run it where your code is checked out, with `govulncheck` and gosec installed there. Argus is optional: without it the skills work the same from the shell.
+
 ## How the output is tested
 
 [`.github/workflows/checks.yml`](.github/workflows/checks.yml) validates every skill with the Agent Skills validator, lints every canonical workflow with `actionlint` and `zizmor`, and fails on any action not pinned to a full commit SHA. [`.github/workflows/security.yml`](.github/workflows/security.yml) is byte-identical to the asset `go-security-setup` installs, and runs it against the [fixture](testdata/fixture/) in this repo. [`.github/dependabot.yml`](.github/dependabot.yml) is likewise byte-identical to the Dependabot asset, which CI checks against the Dependabot schema and with `zizmor`.

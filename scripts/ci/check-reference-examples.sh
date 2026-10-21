@@ -16,6 +16,7 @@ set -euo pipefail
 
 fixture=testdata/fixture
 required=(
+  skills/go-security-audit/references/http-limits.md
   skills/verify-with-fuzz/references/deny-by-default-authz.md
 )
 

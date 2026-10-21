@@ -1,12 +1,12 @@
 ---
 name: go-security-audit
-description: Audits the security of a Go repo and reports findings with evidence (reachable vulnerabilities, module verification, toolchain patch level). Use when the user asks to audit or check the security of a Go repo or service, or asks whether its dependencies or Go version have known vulnerabilities.
+description: Audits the security of a Go repo and reports findings with evidence (reachable vulnerabilities, module verification, toolchain patch level, HTTP servers without timeouts or body limits, fail-open authorization, untrusted IDs and URLs, unpinned workflow actions), then applies the mechanical fixes the user confirms. Use when the user asks to audit or check the security of a Go repo or service, or asks whether its dependencies or Go version have known vulnerabilities.
 license: MIT
 metadata:
   author: davideimola
 ---
 
-Audit the **target repo** (the repo you are running in) and report **findings**. The audit is read-only: you run checks and report, and the target repo's files stay exactly as you found them. The one file you may write is the markdown report, and only when the user asks for it.
+Audit the **target repo** (the repo you are running in) and report **findings**. Up to the report, the audit is read-only: you run checks and report, and the target repo's files stay exactly as you found them. The one file you may write by then is the markdown report, and only when the user asks for it. After the report, you change files only to apply the mechanical fixes the user confirms (step 7).
 
 ## Findings
 
@@ -15,23 +15,36 @@ A finding is one problem, reported with these four parts and nothing left blank:
 - **Severity**, from the table below.
 - **Evidence**: what lets someone else check the finding. Quote the tool output it comes from, and give a `file:line` when the tool names one.
 - **Hypothesis**: what the finding claims is wrong, in one sentence.
-- **Suggested fix or skill**: the change that removes the problem. Label it **mechanical fix** when it only changes a version or a configuration value.
+- **Suggested fix or skill**: the change that removes the problem. Label it **mechanical fix** when it only changes a version, a default or a configuration value. A finding about who may do what or which input is trusted is a **logic finding**: label it so, and its suggested skill is `verify-with-fuzz` with the hypothesis to hand it, never a fix, because a logic fix needs a failing test first.
 
 | Severity | When |
 |---|---|
 | Critical | `go mod verify` reports a module whose content differs from what was downloaded |
-| High | A vulnerability that `govulncheck` shows your code calling; a toolchain on a Go minor line that no longer gets security fixes |
-| Medium | A toolchain behind the latest patch release of its Go minor line |
+| High | A vulnerability that `govulncheck` shows your code calling; a toolchain on a Go minor line that no longer gets security fixes; authorization that grants access when its check cannot be resolved, or checks membership where a role is required; a client-controlled ID or URL crossing a trust boundary unchecked |
+| Medium | A toolchain behind the latest patch release of its Go minor line; an HTTP server without timeouts; a request body read without a size limit; a workflow action not pinned to a full commit SHA |
 
 Only what the checks below show becomes a finding. A vulnerability that `govulncheck` finds in a package or module your code does not call is **context**: count it, and leave it out of the findings.
+
+## Setup answers
+
+`go-security-setup` records what the owner chose to install in `docs/agents/go-security.md`. When the target repo has that file, each answer below is the owner's decision: leave out what the table says, from the findings and from every suggested fix, and name the answer in the report's `Opted out` line. A `yes` or `on` answer, or no answers file, leaves out nothing.
+
+| Answer | Leave out |
+|---|---|
+| `Security workflow: no` | Any finding or suggested fix saying the repo lacks a security workflow or a `govulncheck` run in CI |
+| `Dependabot: no` | Any finding or suggested fix proposing Dependabot, including to keep action pins current |
+| `Toolchain check: no` | Step 3: skip it, so no toolchain finding is reported |
+| `Security policy: no` | Any finding or suggested fix saying the repo lacks a security policy (`SECURITY.md`) |
+| `Fuzzing: off` | Any finding or suggested fix proposing a scheduled fuzz run |
 
 ## Steps
 
 1. **Read the target repo.**
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
    - Baseline: record the output of `git status --porcelain`.
+   - Setup answers: read `docs/agents/go-security.md` if it exists, and note each answer from the [Setup answers](#setup-answers) table it gives.
 
-   Done when you have at least one module directory and the baseline. With no `go.mod`, stop and tell the user this skill is for Go repos.
+   Done when you have at least one module directory, the baseline, and the answers that leave something out (or none). With no `go.mod`, stop and tell the user this skill is for Go repos.
 
 2. **Verify modules.** In each module directory, run `go mod verify`.
 
@@ -42,7 +55,7 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
    - Same minor line listed, older patch: Medium finding. Suggested fix, a mechanical fix: set `toolchain` to the listed version.
    - Minor line not listed: High finding, the line gets no more security fixes. Suggested fix: move to the oldest listed minor line.
 
-   Done when every module has a result, with the `go.mod` line as evidence for each finding. If the release list cannot be fetched, the check did not run: say so in the report.
+   Done when every module has a result, with the `go.mod` line as evidence for each finding, or the step is skipped because of `Toolchain check: no`. If the release list cannot be fetched, the check did not run: say so in the report.
 
 4. **Run govulncheck.** In each module directory, run `govulncheck ./...` from the shell or with the tool your agent provides (for example `run_govulncheck` from an MCP server such as Argus in Toolbox mode). When neither has it, run `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`, which the Go checksum database verifies and which installs nothing. Exit code 0 means no vulnerability is called and 3 means at least one is; any other exit code means the scan failed, so report its output as a check that did not run. A tool that takes a path needs the module directory's absolute path. When it returns structured results instead of that text, each vulnerability is marked called, imported or required: each called one is a High finding as below, with its call traces as the example traces; the imported and required ones are the unreachable count; and a tool error is a scan failure.
    - Each vulnerability under `=== Symbol Results ===` is a High finding. Evidence: its ID, module, `Found in` and `Fixed in` versions, and its example traces with their `file:line`. Hypothesis: the code at the trace reaches the vulnerable symbol. Suggested fix, a mechanical fix: `go get <module>@<fixed version>` then `go mod tidy`, or for a standard library module, set `toolchain` to a release at or above the fixed version.
@@ -50,23 +63,40 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
    Done when every module has its list of called vulnerabilities (possibly empty) and its unreachable count, or a recorded scan failure.
 
-5. **Report.** Write the report in the chat in this shape, with the findings ordered by severity:
+5. **Look for the talk's patterns.** Read the code yourself: these are patterns no scanner above reports reliably. In each module, search the Go files outside `_test.go` files, `vendor/` and `testdata/` for the first three patterns; search the repo's workflows for the fourth. A match the surrounding code shows is safe (a limit set in a middleware on every route to it, a check on the caller before the lookup) is no finding.
+   - **HTTP limits**: a server without timeouts, or a handler reading a request body with no size limit. When the module uses `net/http`, read [references/http-limits.md](references/http-limits.md) now: it says what to look for, the evidence to give, and the mechanical fix, proven in this repo's CI. Medium.
+   - **Fail-open authorization**: a function or middleware that decides whether a caller may act (names like `Can*`, `Authorize*`, `Require*`, `Is*Allowed`, or a role or permission check before a handler). It is a finding when it grants on a path where the decision cannot be resolved (an empty or zero target ID, a lookup error or not-found result, a missing caller, a `default:` branch), or when it compares the caller's membership (`u.OrgID == orgID`, a tenant or team match) where the feature requires a role (its name, doc comment or route says admin or manage). High, logic finding. Evidence: the function's `file:line` and the line that grants. Hypothesis: a concrete caller and target the rule denies and the code grants, such as "a plain member can manage their org" or "a request whose org cannot be resolved is granted".
+   - **Client-controlled IDs and URLs**: a value from the request (`r.PathValue`, `r.URL.Query()`, `r.FormValue`, a header, a decoded body field, a router parameter) that crosses a trust boundary. An ID is a finding when it reads or changes a resource with no check on the way that ties the resource to the authenticated caller. A URL is a finding when it reaches an outbound request (`http.Get`, `http.NewRequest`, a client's `Do`) without an allow-list of hosts, or reaches `http.Redirect`. High, logic finding. Evidence: the `file:line` where the value enters and the `file:line` where it is used. Hypothesis: the crossing, such as "a caller can read another org's invoices by sending their ID" or "a client can make the server request an internal address".
+   - **Unpinned workflow actions**: in each file of `git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml' '*action.yml' '*action.yaml'`, every `uses:` whose ref after `@` is not a full 40-character commit SHA. Local actions (`./`) and `docker://` images pinned by `@sha256:` digest are pinned. Medium. Evidence: the `file:line` and its `uses:` line. Suggested fix, a mechanical fix: `uses: <owner>/<repo>@<sha> # <ref>`, with the SHA the ref points at now from `git ls-remote https://github.com/<owner>/<repo> <ref>` (for an annotated tag, its `^{}` line), never a SHA from memory.
+
+   Done when every module's Go files have been searched for the first three patterns and every `uses:` line of every workflow file has been checked, with each match recorded as a finding with all four parts or as safe because of a line you can name.
+
+6. **Report.** Write the report in the chat in this shape, with the findings ordered by severity:
 
    ```
    ## Go security audit
 
-   Checks: go mod verify, toolchain, govulncheck (<modules audited>)
+   Checks: go mod verify, toolchain, govulncheck, patterns (<modules audited>)
    Findings: <total> (<n> Critical, <n> High, <n> Medium)
 
    ### 1. [<Severity>] <short title> (<module>)
    - Evidence: <tool output, file:line>
    - Hypothesis: <what is wrong>
-   - Suggested fix: <the change, labelled mechanical fix when it is one>
+   - Suggested fix or skill: <the change, labelled mechanical fix when it is one>, or logic finding: `verify-with-fuzz` with <the hypothesis>
 
    Context: govulncheck also knows <unreachable count> vulnerabilities in packages and modules this repo requires that its code does not call. They are not findings.
+   Opted out: <each setup answer that left something out, and what it left out>, or none
    Not run: <each check that did not run, and why>
    ```
 
-   When the user asks for a markdown report, write the same content to the path they give, and to `go-security-audit-<YYYY-MM-DD>.md` at the repo root when they give none. The report ends the audit: applying a suggested fix is a new request from the user.
+   When the user asks for a markdown report, write the same content to the path they give, and to `go-security-audit-<YYYY-MM-DD>.md` at the repo root when they give none.
 
-   Done when every finding from steps 2 to 4 is in the report with all four parts, the unreachable count is in the context line, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).
+   Done when every finding from steps 2 to 5 is in the report with all four parts, the unreachable count is in the context line, every setup answer from step 1 that left something out is in the `Opted out` line, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).
+
+7. **Apply the confirmed mechanical fixes.** When no finding has a mechanical fix, the audit ends at the report. Otherwise:
+   - Prepare every mechanical fix as the finding's suggested fix says, and show each as a unified diff, numbered by its finding.
+   - Ask once: "Apply these <n> mechanical fixes? yes, no, or the numbers to apply." Wait for the answer, and apply exactly the fixes it confirms. With no, the files stay at the baseline.
+   - In each module you changed, run `go build ./...`, `go vet ./...` and `go test ./...`, then rerun the check that produced each applied fix's finding (for a pattern, its search at that `file:line`). A fix that fails them, or whose finding is still there, is reverted, and you show the output that failed.
+   - A logic finding is never fixed in this step: its suggested skill, `verify-with-fuzz`, gives it a failing test first.
+
+   Done when every mechanical fix is applied with its checks passing, reverted with the output that failed, or declined, and `git status --porcelain` prints the baseline plus only the files of the applied fixes (and the markdown report, if the user asked for one).

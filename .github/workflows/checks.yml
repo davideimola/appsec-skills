@@ -27,6 +27,9 @@ jobs:
       - name: Argus appears only in the README section and once in the audit
         run: scripts/ci/check-argus-mentions.sh
 
+      - name: The audit leaves out every piece the setup answers can opt out of
+        run: scripts/ci/check-audit-opt-outs.sh
+
       - name: Agent Skills validator
         run: |
           for dir in skills/*/; do

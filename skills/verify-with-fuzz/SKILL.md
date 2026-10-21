@@ -41,11 +41,13 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
    go test -run '^$' -fuzz '^Fuzz<Func>$' -fuzztime 60s ./<pkg>
    ```
 
-   Use the user's fuzz budget when they give one. Then read the result:
-   - **Reproduced**: a test fails with `granted:` on an input. Check that input against the rule by hand: the rule must deny it. If the rule allows it, the oracle is wrong; fix `allowed` and run again.
-   - **Not reproduced**: every test passes, and the fuzz run ends with `PASS` after the full budget.
+   Use the user's fuzz budget when they give one. Check every `granted:` input against the rule by hand: the rule must deny it. If the rule allows it, the oracle is wrong; fix `allowed` and run again. Then read the result for the hypothesis:
+   - **Reproduced**: the named case fails, or a `granted:` input is an instance of the hypothesis (the same kind of caller reaching the same kind of target).
+   - **Not reproduced**: the named case passes, and no `granted:` input is an instance of the hypothesis.
+
+   Every other `granted:` input is a different bug the rule also forbids: report it under **Also found**, with its input, whatever the result. The fuzzer stops at its first failure, so it may find one of these before the hypothesis; the named case decides the result.
    - A build error, or a failure in the test code itself: fix the test and run again.
-   - A panic inside the code under test: report it with its input as a crash, separately from the hypothesis.
+   - A panic inside the code under test: report it with its input under Also found, as a crash.
 
    A failing fuzz run writes its input to `<pkg>/testdata/fuzz/Fuzz<Func>/`. Keep that file: plain `go test` replays it on every run, so the regression is caught without fuzzing.
 
@@ -58,12 +60,14 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
 
    Result: Reproduced | Not reproduced
    Check: <func> (<file:line>), rule: <the explicit ways in>
-   Evidence: <the failing test and its `granted:` line with the input>, or <the commands run, the fuzz budget, PASS>
+   Evidence: <the failing test and its `granted:` line with the input>, or <the named case passing, the commands run, the fuzz budget>
+   Also found: <each other `granted:` input and the rule it breaks>, or none
    Tests kept: <files>, run with <the step 4 commands>
    ```
 
    - Reproduced: the fix is a separate change the user confirms. These tests are its evidence, and they go green once it lands.
-   - Not reproduced: say the hypothesis did not reproduce within the budget, so there is no bug to fix and no fix to suggest. The tests pass today and stay as regression tests of the rule.
+   - Not reproduced: say the hypothesis did not reproduce within the budget, so there is no fix to suggest for it. Its tests stay as regression tests of the rule.
+   - Also found: each entry is a bug with its evidence already in these tests, fixed the same way as a reproduced one.
 
    Done when every field is filled, and `git status --porcelain` shows the baseline plus only the test files and fuzz inputs you wrote.
 

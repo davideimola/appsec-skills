@@ -1,13 +1,6 @@
-// Package authz decides who may do what. Every check denies by default:
-// access is granted only by an explicit rule, never by falling through.
-package authz
+//go:build !vulnerable
 
-// User is the authenticated caller.
-type User struct {
-	IsSuperAdmin bool
-	IsOrgAdmin   bool
-	OrgID        string
-}
+package authz
 
 // CanManageOrg reports whether u may use admin-only features of orgID.
 //

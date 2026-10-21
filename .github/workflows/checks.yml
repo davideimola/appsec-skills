@@ -53,3 +53,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: pipx run zizmor==1.31.1 .github/workflows skills/*/assets/security.yml
+
+  fuzz-property:
+    name: Fuzz property catches fail-open authz
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: testdata/fixture/go.mod
+          cache: false
+
+      - name: Property fails on the vulnerable authz and passes on the fixed one
+        run: scripts/ci/check-fuzz-catches-vulnerable.sh

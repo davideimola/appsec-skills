@@ -8,6 +8,7 @@ set -euo pipefail
 pairs=(
   skills/go-security-setup/assets/security.yml:.github/workflows/security.yml
   skills/go-security-setup/assets/dependabot.yml:.github/dependabot.yml
+  skills/go-security-setup/assets/go-security.md:docs/agents/go-security.md
 )
 
 status=0

@@ -1,0 +1,79 @@
+name: Go security
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: Go security (${{ matrix.module }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - testdata/fixture
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - id: setup-go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ${{ matrix.module }}/go.mod
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: Show Go version
+        working-directory: ${{ matrix.module }}
+        run: go version
+
+      - name: Verify modules
+        working-directory: ${{ matrix.module }}
+        run: go mod verify
+
+      - name: Vet
+        working-directory: ${{ matrix.module }}
+        run: go vet ./...
+
+      - name: govulncheck
+        continue-on-error: false
+        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
+        with:
+          go-version-input: ${{ steps.setup-go.outputs.go-version }}
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+          repo-checkout: false
+          work-dir: ${{ matrix.module }}
+
+      - name: Test
+        working-directory: ${{ matrix.module }}
+        run: go test ./...
+
+      - name: Fuzz each target (weekly)
+        if: github.event_name == 'schedule'
+        working-directory: ${{ matrix.module }}
+        shell: bash
+        env:
+          FUZZ_TIME: 1m
+        run: |
+          for pkg in $(go list ./...); do
+            for target in $(go test -list '^Fuzz' "$pkg" | grep '^Fuzz' || true); do
+              echo "::group::Fuzz $pkg $target"
+              if ! go test -run='^$' -fuzz="^${target}\$" -fuzztime="$FUZZ_TIME" "$pkg"; then
+                echo "::endgroup::"
+                for input in $(git ls-files --others --exclude-standard -- '*testdata/fuzz/*'); do
+                  echo "Failing input $input (commit it to keep it as a regression test):"
+                  cat "$input"
+                done
+                exit 1
+              fi
+              echo "::endgroup::"
+            done
+          done

@@ -1,0 +1,4 @@
+# Claude Code local state: agent worktrees (full checkouts of this repo, each
+# with its own skills/) and per-user settings. Never committed or published.
+/.claude/worktrees/
+/.claude/settings.local.json

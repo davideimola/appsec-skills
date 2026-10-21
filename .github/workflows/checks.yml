@@ -1,0 +1,114 @@
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  skills:
+    name: Skills
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Skill files live only in the published skills folder
+        run: scripts/ci/check-skills-folder.sh
+
+      - name: Manifest, README and licenses list exactly the published skills
+        run: scripts/ci/check-published-skills.sh
+
+      - name: Argus appears only in the README section and once in the audit
+        run: scripts/ci/check-argus-mentions.sh
+
+      - name: The audit leaves out every piece the setup answers can opt out of
+        run: scripts/ci/check-audit-opt-outs.sh
+
+      - name: The setup and the audit state the toolchain rules and module discovery identically
+        run: scripts/ci/check-shared-rules.sh
+
+      - name: Agent Skills validator
+        run: |
+          . scripts/ci/tools.env
+          for dir in skills/*/; do
+            pipx run --spec "skills-ref==$SKILLS_REF_VERSION" agentskills validate "$dir"
+          done
+
+  workflows:
+    name: Workflows and canonical assets
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: testdata/fixture/go.mod
+          cache: false
+
+      - name: Every uses is pinned to a full commit SHA
+        run: scripts/ci/check-pins.sh
+
+      - name: This repo's security workflow, Dependabot config, setup answers and security policy are byte-identical to the assets
+        run: scripts/ci/check-asset-copy.sh
+
+      - name: Weekly schedule, fuzz gated on it, fuzz step green on the fixture
+        run: scripts/ci/check-weekly-fuzz.sh
+
+      - name: govulncheck scans with the Go version setup-go installed from the module's go.mod
+        run: scripts/ci/check-govulncheck-go-version.sh
+
+      - name: The audit runs the gosec and govulncheck versions the fixture tracks as direct tool dependencies
+        run: scripts/ci/check-tool-versions.sh
+
+      - name: Setup answers match the asset's defaults, and every other answer lints clean
+        run: scripts/ci/check-setup-answers.sh
+
+      - name: Security policy asset reports through the default channel, and the setup names every other channel's line
+        run: scripts/ci/check-security-policy.sh
+
+      - name: Dependabot config schema
+        run: |
+          . scripts/ci/tools.env
+          pipx run "check-jsonschema==$CHECK_JSONSCHEMA_VERSION" --builtin-schema vendor.dependabot .github/dependabot.yml skills/*/assets/dependabot.yml
+
+      - name: actionlint
+        run: |
+          . scripts/ci/tools.env
+          go run "github.com/rhysd/actionlint/cmd/actionlint@$ACTIONLINT_VERSION" .github/workflows/*.yml skills/*/assets/security.yml
+
+      - name: zizmor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          . scripts/ci/tools.env
+          pipx run "zizmor==$ZIZMOR_VERSION" .github/workflows .github/dependabot.yml skills/*/assets/security.yml skills/*/assets/dependabot.yml
+
+  fuzz-property:
+    name: Fuzz property catches fail-open authz
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: testdata/fixture/go.mod
+          cache: false
+
+      - name: Property fails on the vulnerable authz and passes on the fixed one
+        run: scripts/ci/check-fuzz-catches-vulnerable.sh
+
+      - name: A logic finding's test fails before the fix, passes after it, and stays
+        run: scripts/ci/check-logic-fix-loop.sh
+
+      - name: Skill reference examples quote the proven fixture code
+        run: scripts/ci/check-reference-examples.sh

@@ -2,6 +2,10 @@
 
 Agent Skills for Go security. The design and its rationale are in `docs/design/2026-10-21-design-session.md`.
 
+## Commits and pull requests
+
+PR titles and commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`, …). PRs are squash-merged, so the PR title becomes the commit on `main` and the changelog entry.
+
 ## Agent skills
 
 ### Issue tracker

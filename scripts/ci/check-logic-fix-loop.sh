@@ -16,6 +16,9 @@
 #     passes and still replays the kept input.
 #
 # Everything runs on a temporary copy of the fixture.
+#
+# It matches the skills' prose on purpose (step 4's heading and sh block, "After
+# a fix"): rewording those lines means updating this check in the same change.
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 

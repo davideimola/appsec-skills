@@ -6,6 +6,8 @@
 #      a single line that replaces that one line;
 #   3. the repo-specific Scope section is the asset's last section, so a
 #      target repo's copy drops it whole and keeps a policy with no scope.
+# It matches the skill's prose on purpose (each reporting line, `## Scope`):
+# rewording those lines means updating this check in the same change.
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 

@@ -1,0 +1,17 @@
+# go-security-skills
+
+Agent Skills for Go security. The design and its rationale are in `docs/design/2026-10-21-design-session.md`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for davideimola/go-security-skills, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.

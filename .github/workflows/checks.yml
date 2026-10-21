@@ -21,6 +21,9 @@ jobs:
       - name: Skill files live only in the published skills folder
         run: scripts/ci/check-skills-folder.sh
 
+      - name: Manifest, README and licenses list exactly the published skills
+        run: scripts/ci/check-published-skills.sh
+
       - name: Agent Skills validator
         run: |
           for dir in skills/*/; do
@@ -45,6 +48,9 @@ jobs:
 
       - name: This repo's security workflow and Dependabot config are byte-identical to the assets
         run: scripts/ci/check-asset-copy.sh
+
+      - name: Weekly schedule, fuzz gated on it, fuzz step green on the fixture
+        run: scripts/ci/check-weekly-fuzz.sh
 
       - name: Dependabot config schema
         run: pipx run check-jsonschema==0.38.2 --builtin-schema vendor.dependabot .github/dependabot.yml skills/*/assets/dependabot.yml

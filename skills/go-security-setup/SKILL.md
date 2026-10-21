@@ -20,6 +20,8 @@ These are the only lines you change. The assets ship with the values of the repo
 |---|---|---|
 | Default branch | `on.push.branches: [main]` | the target repo's default branch |
 | Module directories | `jobs.security.strategy.matrix.module: [testdata/fixture]` | one entry per Go module, as a path from the repo root (`.` for the root module) |
+| Weekly schedule | `on.schedule: [cron: "0 6 * * 1"]` (Monday 06:00 UTC) | the day and time the user chose, as a once-a-week cron in UTC; keep the default when they have no preference |
+| Fuzz time per target | `FUZZ_TIME: 1m` in the `Fuzz each target (weekly)` step | the duration the user chose, as a Go duration (`30s`, `5m`); keep the default when they have no preference |
 | Dependabot module directories | `assets/dependabot.yml`: the `gomod` entry's `directories: [/testdata/fixture]` | one entry per Go module, as `/` plus its path (`/` for the root module) |
 
 ## Steps
@@ -33,7 +35,7 @@ These are the only lines you change. The assets ship with the values of the repo
 
 2. **Adapt the asset.** Copy `assets/security.yml` byte for byte, then replace only the adapted values above. Keep the block-list style of the asset (one `- item` per line).
 
-   Done when a diff between the asset and your adapted file shows changes only on the default-branch and module lines.
+   Done when a diff between the asset and your adapted file shows changes only on the lines of the adapted values above.
 
 3. **Show and confirm.** Show the user the full file you will write, its path, and the diff against the asset from step 2. Ask for confirmation.
 
@@ -61,7 +63,7 @@ The existing config belongs to the target repo: every line in it, including its 
 
 ## What the workflow does
 
-On every pull request and every push to the default branch, for each module: check out the code without persisting credentials, install the Go version from that module's `go.mod`, verify modules, vet, run `govulncheck` with that same Go version, and run the tests (which also run fuzz seed corpora). It uses only `actions/checkout`, `actions/setup-go`, `golang/govulncheck-action` and the `go` command.
+On every pull request, every push to the default branch and once a week, for each module: check out the code without persisting credentials, install the Go version from that module's `go.mod`, verify modules, vet, run `govulncheck` with that same Go version, and run the tests (which also run fuzz seed corpora). The weekly run catches advisories published after the last change, and it also fuzzes each fuzz target in the module for the fuzz time; on a failure it prints the failing input so the user can commit it as a regression test. Pull request and push runs never fuzz beyond the seed corpora. It uses only `actions/checkout`, `actions/setup-go`, `golang/govulncheck-action` and the `go` command.
 
 ## What the Dependabot config does
 

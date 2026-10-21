@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
@@ -52,3 +54,25 @@ jobs:
       - name: Test
         working-directory: ${{ matrix.module }}
         run: go test ./...
+
+      - name: Fuzz each target (weekly)
+        if: github.event_name == 'schedule'
+        working-directory: ${{ matrix.module }}
+        shell: bash
+        env:
+          FUZZ_TIME: 1m
+        run: |
+          for pkg in $(go list ./...); do
+            for target in $(go test -list '^Fuzz' "$pkg" | grep '^Fuzz' || true); do
+              echo "::group::Fuzz $pkg $target"
+              if ! go test -run='^$' -fuzz="^${target}\$" -fuzztime="$FUZZ_TIME" "$pkg"; then
+                echo "::endgroup::"
+                for input in $(git ls-files --others --exclude-standard -- '*testdata/fuzz/*'); do
+                  echo "Failing input $input (commit it to keep it as a regression test):"
+                  cat "$input"
+                done
+                exit 1
+              fi
+              echo "::endgroup::"
+            done
+          done

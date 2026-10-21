@@ -1,6 +1,6 @@
 ---
 name: go-security-setup
-description: Installs Go security CI into a Go repo by adapting a tested canonical workflow (module verification, vet, govulncheck, tests, weekly fuzzing) and Dependabot config (Go modules and GitHub Actions), bumps an unpatched go.mod toolchain, and adds a SECURITY.md. Use when the user wants security CI, govulncheck, Dependabot or a security policy set up in a Go repo, or wants to change its schedule, fuzzing or failure policy.
+description: Go security CI setup for a Go repo. Use when the user wants security CI set up in a Go repo (govulncheck, fuzzing, Dependabot, a patched toolchain, a security policy), or its schedule, fuzzing or failure policy changed.
 license: MIT
 metadata:
   author: davideimola

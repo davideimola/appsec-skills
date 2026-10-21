@@ -1,6 +1,6 @@
 ---
 name: go-security-audit
-description: Audits the security of a Go repo and reports findings with evidence (reachable vulnerabilities, module verification, toolchain patch level, gosec static analysis, HTTP servers without timeouts or body limits, fail-open authorization, untrusted IDs and URLs, unpinned workflow actions), then applies the mechanical fixes the user confirms and fixes a logic finding only after verify-with-fuzz proves it with a failing test. Use when the user asks to audit or check the security of a Go repo or service, or asks whether its dependencies or Go version have known vulnerabilities.
+description: Security audit of a Go repo or service. Use when the user asks to audit or check the security of Go code, or whether its dependencies or Go version have known vulnerabilities.
 license: MIT
 metadata:
   author: davideimola

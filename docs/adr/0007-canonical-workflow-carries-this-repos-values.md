@@ -11,3 +11,4 @@ ADR 0002 requires this repo's `.github/workflows/security.yml` to be byte-identi
 
 - A change to the asset is a change to this repo's CI in the same PR, and the reverse.
 - Each new adapted value (schedule, fuzz duration, failure policy) must be a line this repo can also run with its own value, and it is added to the skill's adapted-values table.
+- `assets/dependabot.yml` follows the same rule: it carries this repo's module directory (`/testdata/fixture`), is byte-identical to `.github/dependabot.yml`, and its `gomod` directories are an adapted value.

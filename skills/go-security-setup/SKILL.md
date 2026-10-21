@@ -37,6 +37,7 @@ An existing workflow **covers govulncheck** when it runs `govulncheck` (the comm
 
 Standard library fixes ship only as Go toolchain releases, so a module is patched only when the toolchain its `go.mod` selects is the latest patch of a supported Go minor. The installed workflow's `setup-go` and `govulncheck` use that same toolchain.
 
+<!-- shared: toolchain -->
 - **Selected toolchain:** the `toolchain` line's version; with no `toolchain` line, the `go` line's version (`go 1.26` selects `go1.26`, older than every `go1.26.x` patch).
 - **Supported releases:** `curl -s 'https://go.dev/dl/?mode=json'` lists the supported stable releases, newest first, each with its `version`. A minor is supported when one of them has that minor.
 
@@ -46,7 +47,8 @@ Standard library fixes ship only as Go toolchain releases, so a module is patche
 | Outdated | its minor is listed with a newer patch | the latest patch of the same minor |
 | Unsupported | its minor is not listed | the latest patch of the oldest listed minor that is not older than the `go` line |
 
-A bump changes only the `toolchain` line: replace its version, or, with no `toolchain` line, add `toolchain <version>` after the `go` line with one blank line between them, as `go mod edit -toolchain` writes it. The `go` line is the module's language version and stays as it is.
+A bump changes only the `toolchain` line: replace its version, or, with no `toolchain` line, add `toolchain <version>` after the `go` line with one blank line between them, as `go mod edit -toolchain=<version>` writes it. The `go` line is the module's language version and stays as it is.
+<!-- /shared: toolchain -->
 
 ## Security policy
 

@@ -30,6 +30,9 @@ jobs:
       - name: The audit leaves out every piece the setup answers can opt out of
         run: scripts/ci/check-audit-opt-outs.sh
 
+      - name: The setup and the audit state the toolchain rules and module discovery identically
+        run: scripts/ci/check-shared-rules.sh
+
       - name: Agent Skills validator
         run: |
           . scripts/ci/tools.env

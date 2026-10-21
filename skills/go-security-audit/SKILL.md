@@ -50,12 +50,22 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
    Done when every module has a result. `all modules verified` is no finding. Any other output is a Critical finding per module, with that output as its evidence and, as its suggested fix, clearing the module cache entry (`go clean -modcache`) and finding out how the content changed before trusting it again.
 
-3. **Check the toolchain.** In each module's `go.mod`, the Go version builds use is the `toolchain` line, or the `go` line when there is no `toolchain` line (`go 1.26` means `go1.26.0`). Fetch the supported releases from `https://go.dev/dl/?mode=json`: each entry's `version` is the latest patch of a supported minor line.
-   - Same minor line listed, same patch: no finding.
-   - Same minor line listed, older patch: Medium finding. Suggested fix, a mechanical fix: `go mod edit -toolchain=<listed version>`.
-   - Minor line not listed: High finding, the line gets no more security fixes. Suggested fix, a mechanical fix: `go mod edit -toolchain=<version>`, with the latest patch of the oldest listed minor line that is not older than the `go` line.
+3. **Check the toolchain.** Give each module's `go.mod` a status.
 
-   A toolchain bump changes only the `toolchain` line, which `go mod edit -toolchain` replaces or adds after the `go` line. The `go` line is the module's language version and stays as it is.
+   <!-- shared: toolchain -->
+   - **Selected toolchain:** the `toolchain` line's version; with no `toolchain` line, the `go` line's version (`go 1.26` selects `go1.26`, older than every `go1.26.x` patch).
+   - **Supported releases:** `curl -s 'https://go.dev/dl/?mode=json'` lists the supported stable releases, newest first, each with its `version`. A minor is supported when one of them has that minor.
+
+   | Status | When | Bump `toolchain` to |
+   |---|---|---|
+   | Patched | the selected toolchain is the latest listed patch of its minor | nothing |
+   | Outdated | its minor is listed with a newer patch | the latest patch of the same minor |
+   | Unsupported | its minor is not listed | the latest patch of the oldest listed minor that is not older than the `go` line |
+
+   A bump changes only the `toolchain` line: replace its version, or, with no `toolchain` line, add `toolchain <version>` after the `go` line with one blank line between them, as `go mod edit -toolchain=<version>` writes it. The `go` line is the module's language version and stays as it is.
+   <!-- /shared: toolchain -->
+
+   Patched is no finding. Outdated is a Medium finding. Unsupported is a High finding: its minor line gets no more security fixes. For both, the suggested fix is a mechanical fix: `go mod edit -toolchain=<version>`, with the version from the table.
 
    Done when every module has a result, with the `go.mod` line as evidence for each finding, or the step is skipped because of `Toolchain check: no`. If the release list cannot be fetched, the check did not run: say so in the report.
 

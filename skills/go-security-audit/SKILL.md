@@ -52,13 +52,15 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
 3. **Check the toolchain.** In each module's `go.mod`, the Go version builds use is the `toolchain` line, or the `go` line when there is no `toolchain` line (`go 1.26` means `go1.26.0`). Fetch the supported releases from `https://go.dev/dl/?mode=json`: each entry's `version` is the latest patch of a supported minor line.
    - Same minor line listed, same patch: no finding.
-   - Same minor line listed, older patch: Medium finding. Suggested fix, a mechanical fix: set `toolchain` to the listed version.
-   - Minor line not listed: High finding, the line gets no more security fixes. Suggested fix: move to the oldest listed minor line.
+   - Same minor line listed, older patch: Medium finding. Suggested fix, a mechanical fix: `go mod edit -toolchain=<listed version>`.
+   - Minor line not listed: High finding, the line gets no more security fixes. Suggested fix, a mechanical fix: `go mod edit -toolchain=<version>`, with the latest patch of the oldest listed minor line that is not older than the `go` line.
+
+   A toolchain bump changes only the `toolchain` line, which `go mod edit -toolchain` replaces or adds after the `go` line. The `go` line is the module's language version and stays as it is.
 
    Done when every module has a result, with the `go.mod` line as evidence for each finding, or the step is skipped because of `Toolchain check: no`. If the release list cannot be fetched, the check did not run: say so in the report.
 
 4. **Run govulncheck.** In each module directory, run `govulncheck ./...` from the shell or with the tool your agent provides (for example `run_govulncheck` from an MCP server such as Argus in Toolbox mode). When neither has it, run `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`, which the Go checksum database verifies and which installs nothing. Exit code 0 means no vulnerability is called and 3 means at least one is; any other exit code means the scan failed, so report its output as a check that did not run. A tool that takes a path needs the module directory's absolute path. When it returns structured results instead of that text, each vulnerability is marked called, imported or required: each called one is a High finding as below, with its call traces as the example traces; the imported and required ones are the unreachable count; and a tool error is a scan failure.
-   - Each vulnerability under `=== Symbol Results ===` is a High finding. Evidence: its ID, module, `Found in` and `Fixed in` versions, and its example traces with their `file:line`. Hypothesis: the code at the trace reaches the vulnerable symbol. Suggested fix, a mechanical fix: `go get <module>@<fixed version>` then `go mod tidy`, or for a standard library module, set `toolchain` to a release at or above the fixed version.
+   - Each vulnerability under `=== Symbol Results ===` is a High finding. Evidence: its ID, module, `Found in` and `Fixed in` versions, and its example traces with their `file:line`. Hypothesis: the code at the trace reaches the vulnerable symbol. Suggested fix, a mechanical fix: `go get <module>@<fixed version>` then `go mod tidy`, or for a standard library module, a toolchain bump (step 3) to a release at or above the fixed version.
    - The closing summary counts the vulnerabilities in packages you import and in modules you require that your code doesn't call. Add the two numbers: that sum is the module's unreachable count.
 
    Done when every module has its list of called vulnerabilities (possibly empty) and its unreachable count, or a recorded scan failure.

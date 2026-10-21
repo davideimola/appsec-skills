@@ -24,7 +24,7 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
 
 2. **Write the named cases.** In the package's `_test.go` file (the existing one when there is one), add `Test<Func>Denies`: a table of literal inputs the rule denies. It holds the named case and its neighbours: the target that could not be resolved (empty ID, zero value), the missing role, another tenant. When no test checks the explicit ways in, add `Test<Func>Allows` with one literal case per way in. Every expected answer comes from the rule, never from running the code.
 
-   Done when every way the named case could be denied has a row, and `go vet ./<pkg>` passes.
+   Done when `Test<Func>Denies` has the named case, a row with the target unresolved, and, for each way in from step 1, a row that misses exactly one of its conditions (the role, the same tenant); each way in has a case in `Test<Func>Allows` or an existing test; and `go vet ./<pkg>` passes.
 
 3. **Write the property.** In `<file>_fuzz_test.go` next to the check, add `Fuzz<Func>`:
    - Its arguments are the decision's inputs as primitives (`bool`, `string`, `[]byte`, integer and float types), and it builds the function's arguments from them, as the reference builds `User`.
@@ -32,7 +32,7 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
    - It fails only when the check grants what is not allowed: `t.Fatalf("granted: %+v on %q", ...)` with the inputs.
    - Its one seed (`f.Add`) is a case the rule allows. The fuzzer finds the denied cases; the named cases from step 2 already hold the case you know.
 
-   Done when `go vet ./<pkg>` passes.
+   Done when `Fuzz<Func>`'s fuzz arguments are all primitives, `allowed` is step 1's ways in and calls nothing from the package under test, its only failure is the `granted:` `t.Fatalf` on a grant `allowed` rejects, its one `f.Add` seed is a case `allowed` accepts, and `go vet ./<pkg>` passes.
 
 4. **Run it.** From the module directory, run:
 

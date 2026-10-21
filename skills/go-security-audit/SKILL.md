@@ -1,12 +1,12 @@
 ---
 name: go-security-audit
-description: Audits the security of a Go repo and reports findings with evidence (reachable vulnerabilities, module verification, toolchain patch level, gosec static analysis, HTTP servers without timeouts or body limits, fail-open authorization, untrusted IDs and URLs, unpinned workflow actions), then applies the mechanical fixes the user confirms. Use when the user asks to audit or check the security of a Go repo or service, or asks whether its dependencies or Go version have known vulnerabilities.
+description: Audits the security of a Go repo and reports findings with evidence (reachable vulnerabilities, module verification, toolchain patch level, gosec static analysis, HTTP servers without timeouts or body limits, fail-open authorization, untrusted IDs and URLs, unpinned workflow actions), then applies the mechanical fixes the user confirms and fixes a logic finding only after verify-with-fuzz proves it with a failing test. Use when the user asks to audit or check the security of a Go repo or service, or asks whether its dependencies or Go version have known vulnerabilities.
 license: MIT
 metadata:
   author: davideimola
 ---
 
-Audit the **target repo** (the repo you are running in) and report **findings**. Up to the report, the audit is read-only: you run checks and report, and the target repo's files stay exactly as you found them. The one file you may write by then is the markdown report, and only when the user asks for it. After the report, you change files only to apply the mechanical fixes the user confirms (step 8).
+Audit the **target repo** (the repo you are running in) and report **findings**. Up to the report, the audit is read-only: you run checks and report, and the target repo's files stay exactly as you found them. The one file you may write by then is the markdown report, and only when the user asks for it. After the report, you change files only to apply the mechanical fixes the user confirms (step 8), and to prove each logic finding with `verify-with-fuzz` and apply the fix the user confirms once its test fails (step 9).
 
 ## Findings
 
@@ -106,10 +106,18 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
    Done when every finding from steps 2 to 6 is in the report with all four parts, the unreachable count is in the context line, every dismissed gosec signal is listed with its reason, every setup answer from step 1 that left something out is in the `Opted out` line, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).
 
-8. **Apply the confirmed mechanical fixes.** When no finding has a mechanical fix, the audit ends at the report. Otherwise:
+8. **Apply the confirmed mechanical fixes.** When no finding has a mechanical fix, go to step 9. Otherwise:
    - Prepare every mechanical fix as the finding's suggested fix says, and show each as a unified diff, numbered by its finding.
    - Ask once: "Apply these <n> mechanical fixes? yes, no, or the numbers to apply." Wait for the answer, and apply exactly the fixes it confirms. With no, the files stay at the baseline.
    - In each module you will change, run `go build ./...`, `go vet ./...` and `go test ./...` before applying anything, and record what fails. After applying, run them again, then rerun the check that produced each applied fix's finding (for a pattern, its search at that `file:line`). A fix that makes something fail that passed before, or whose finding is still there, is reverted, and you show the output that failed.
-   - A logic finding is never fixed in this step: its suggested skill, `verify-with-fuzz`, gives it a failing test first.
-
    Done when every mechanical fix is applied with its checks passing, reverted with the output that failed, or declined, and `git status --porcelain` prints the baseline plus only the files of the applied fixes (and the markdown report, if the user asked for one).
+
+9. **Prove, then fix, the logic findings.** When no finding is a logic finding, the audit ends here. Otherwise:
+   - Ask once: "Prove these <n> logic findings with `verify-with-fuzz`? It adds tests and changes no code. yes, no, or the numbers to prove." Wait for the answer. A finding it does not confirm stays a hypothesis in the report, and you propose no fix for it.
+   - For each confirmed finding, in the report's order, follow `verify-with-fuzz` with the finding's hypothesis, through its report. When `verify-with-fuzz` is not installed, stop: tell the user each logic finding needs it for a failing test, and propose no fix.
+   - **Not reproduced**: propose no fix. Its tests stay as regression tests.
+   - **Reproduced**, and each entry under **Also found**: only now, with the test failing, prepare the fix to the check. It changes only the decision the tests cover, so the check grants exactly the rule's ways in from `verify-with-fuzz`'s step 1. Show it as a unified diff, with the failing test and its `granted:` line as its evidence, and ask: "Apply this fix to <func>? yes or no." Apply it only on yes; with no, the code stays as it is and the tests stay failing.
+   - In the module, run `go build ./...`, `go vet ./...` and `go test ./...` before applying the fix, and record what fails besides the new tests. After applying, run `verify-with-fuzz`'s After a fix section (its step 4 commands unchanged, then `go test ./<pkg>`), then the three commands again. The fix is verified when the After a fix commands pass and nothing fails that passed before. Otherwise revert the fix and show the output that failed, such as the input still granted. The tests stay either way.
+   - Tell the user, per logic finding: its result, the fix (applied and verified, reverted with the output that failed, declined, or none proposed), and the test files kept.
+
+   Done when every logic finding is reproduced or not reproduced with `verify-with-fuzz`'s report, or not confirmed for proving; every reproduced one and every Also found entry has its fix applied and verified, reverted with the output that failed, or declined; and `git status --porcelain` prints the baseline plus only the files of the applied mechanical fixes, the test files and `testdata/fuzz/` inputs `verify-with-fuzz` wrote, and the files of the applied logic fixes (and the markdown report, if the user asked for one).

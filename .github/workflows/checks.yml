@@ -94,5 +94,8 @@ jobs:
       - name: Property fails on the vulnerable authz and passes on the fixed one
         run: scripts/ci/check-fuzz-catches-vulnerable.sh
 
+      - name: A logic finding's test fails before the fix, passes after it, and stays
+        run: scripts/ci/check-logic-fix-loop.sh
+
       - name: Skill reference examples quote the proven fixture code
         run: scripts/ci/check-reference-examples.sh

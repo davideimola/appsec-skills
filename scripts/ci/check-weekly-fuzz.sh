@@ -9,47 +9,42 @@
 # CHECK_FUZZ_TIME (default 5s) replaces the asset's FUZZ_TIME so the check stays
 # fast; everything else is the asset's own step.
 set -euo pipefail
+. "$(dirname "$0")/lib.sh"
 
-asset=skills/go-security-setup/assets/security.yml
-yq() { go run github.com/mikefarah/yq/v4@v4.54.1 "$@"; }
-
-fail() {
-  echo "check-weekly-fuzz: $*" >&2
-  exit 1
-}
+asset=$workflow_asset
 
 cron=$(yq '.on.schedule[0].cron // ""' "$asset")
-[ -n "$cron" ] || fail "$asset has no on.schedule cron"
+[ -n "$cron" ] || die "$asset has no on.schedule cron"
 dow=$(printf '%s' "$cron" | awk '{print $5}')
 case "$dow" in
   [0-7] | [A-Za-z][A-Za-z][A-Za-z]) ;;
-  *) fail "schedule '$cron' is not once a week (day-of-week field: '$dow')" ;;
+  *) die "schedule '$cron' is not once a week (day-of-week field: '$dow')" ;;
 esac
 
 fuzz_steps=$(yq '[.jobs[].steps[] | select((.run // "") | test("-fuzz[= ]"))] | length' "$asset")
-[ "$fuzz_steps" -ge 1 ] || fail "$asset has no step that runs go test -fuzz"
+[ "$fuzz_steps" -ge 1 ] || die "$asset has no step that runs go test -fuzz"
 ungated=$(yq '[.jobs[].steps[] | select((.run // "") | test("-fuzz[= ]")) | select(.if != "github.event_name == '\''schedule'\''")] | length' "$asset")
-[ "$ungated" -eq 0 ] || fail "$ungated fuzz step(s) are not gated on github.event_name == 'schedule'"
+[ "$ungated" -eq 0 ] || die "$ungated fuzz step(s) are not gated on github.event_name == 'schedule'"
 
 step_run=$(yq '.jobs.security.steps[] | select((.run // "") | test("-fuzz[= ]")) | .run' "$asset")
 step_shell=$(yq '.jobs.security.steps[] | select((.run // "") | test("-fuzz[= ]")) | .shell // ""' "$asset")
-[ "$step_shell" = bash ] || fail "the fuzz step must set shell: bash so a failing pipeline fails the step"
+[ "$step_shell" = bash ] || die "the fuzz step must set shell: bash so a failing pipeline fails the step"
 
-tmp=$(mktemp)
-trap 'rm -f "$tmp"' EXIT
+mkwork
+tmp=$work/fuzz-step.sh
 printf '%s\n' "$step_run" >"$tmp"
 
 modules=$(yq '.jobs.security.strategy.matrix.module[]' "$asset")
 for module in $modules; do
-  echo "check-weekly-fuzz: running the fuzz step in $module"
+  echo "$check: running the fuzz step in $module"
   log=$( (cd "$module" && FUZZ_TIME="${CHECK_FUZZ_TIME:-5s}" bash --noprofile --norc -eo pipefail "$tmp") 2>&1) || {
     printf '%s\n' "$log" >&2
-    fail "the fuzz step failed in $module"
+    die "the fuzz step failed in $module"
   }
   printf '%s\n' "$log"
   want=$(cd "$module" && go test -list '^Fuzz' ./... | grep -c '^Fuzz' || true)
   got=$(printf '%s\n' "$log" | grep -c '^::group::Fuzz ' || true)
-  [ "$want" -ge 1 ] || fail "$module has no fuzz target to prove the step on"
-  [ "$got" -eq "$want" ] || fail "the fuzz step fuzzed $got of $want fuzz targets in $module"
+  [ "$want" -ge 1 ] || die "$module has no fuzz target to prove the step on"
+  [ "$got" -eq "$want" ] || die "the fuzz step fuzzed $got of $want fuzz targets in $module"
 done
-echo "check-weekly-fuzz: weekly schedule set, fuzzing gated on it, and the fuzz step passes"
+echo "$check: weekly schedule set, fuzzing gated on it, and the fuzz step passes"

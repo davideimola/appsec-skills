@@ -32,8 +32,9 @@ jobs:
 
       - name: Agent Skills validator
         run: |
+          . scripts/ci/tools.env
           for dir in skills/*/; do
-            pipx run --spec skills-ref==0.1.1 agentskills validate "$dir"
+            pipx run --spec "skills-ref==$SKILLS_REF_VERSION" agentskills validate "$dir"
           done
 
   workflows:
@@ -68,15 +69,21 @@ jobs:
         run: scripts/ci/check-security-policy.sh
 
       - name: Dependabot config schema
-        run: pipx run check-jsonschema==0.38.2 --builtin-schema vendor.dependabot .github/dependabot.yml skills/*/assets/dependabot.yml
+        run: |
+          . scripts/ci/tools.env
+          pipx run "check-jsonschema==$CHECK_JSONSCHEMA_VERSION" --builtin-schema vendor.dependabot .github/dependabot.yml skills/*/assets/dependabot.yml
 
       - name: actionlint
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 .github/workflows/*.yml skills/*/assets/security.yml
+        run: |
+          . scripts/ci/tools.env
+          go run "github.com/rhysd/actionlint/cmd/actionlint@$ACTIONLINT_VERSION" .github/workflows/*.yml skills/*/assets/security.yml
 
       - name: zizmor
         env:
           GH_TOKEN: ${{ github.token }}
-        run: pipx run zizmor==1.31.1 .github/workflows .github/dependabot.yml skills/*/assets/security.yml skills/*/assets/dependabot.yml
+        run: |
+          . scripts/ci/tools.env
+          pipx run "zizmor==$ZIZMOR_VERSION" .github/workflows .github/dependabot.yml skills/*/assets/security.yml skills/*/assets/dependabot.yml
 
   fuzz-property:
     name: Fuzz property catches fail-open authz

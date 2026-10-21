@@ -4,12 +4,7 @@
 # MCP server, next to the tool-neutral wording), and no mention in any other
 # skill. The skills stay usable with any agent; Argus is one option.
 set -euo pipefail
-
-status=0
-fail() {
-  echo "check-argus-mentions: $*" >&2
-  status=1
-}
+. "$(dirname "$0")/lib.sh"
 
 readme=README.md
 if ! grep -qE '^## .*Argus' "$readme"; then
@@ -21,7 +16,7 @@ else
   done
 fi
 
-audit=skills/go-security-audit/SKILL.md
+audit=$audit_skill
 count=$( (grep -o 'Argus' "$audit" || true) | wc -l | tr -d ' ')
 if [ "$count" -ne 1 ]; then
   fail "$audit: names Argus $count times, expected exactly once"
@@ -39,7 +34,4 @@ for skill in skills/*/; do
   fi
 done
 
-if [ "$status" -eq 0 ]; then
-  echo "check-argus-mentions: README has the Argus section and only go-security-audit names Argus, once"
-fi
-exit "$status"
+finish "README has the Argus section and only go-security-audit names Argus, once"

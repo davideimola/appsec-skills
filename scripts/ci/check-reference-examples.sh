@@ -13,25 +13,18 @@
 # copies is the one check-fuzz-catches-vulnerable.sh runs. Every reference file
 # listed in `required` must quote at least one fixture file.
 set -euo pipefail
+. "$(dirname "$0")/lib.sh"
 
-fixture=testdata/fixture
 required=(
   skills/go-security-audit/references/http-limits.md
   skills/verify-with-fuzz/references/deny-by-default-authz.md
 )
 
-status=0
-fail() {
-  echo "check-reference-examples: $*" >&2
-  status=1
-}
-
 for ref in "${required[@]}"; do
   [ -f "$ref" ] || fail "missing $ref"
 done
 
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+mkwork
 
 checked=0
 shopt -s nullglob
@@ -76,7 +69,4 @@ for ref in skills/*/references/*.md; do
   checked=$((checked + quoted))
 done
 
-if [ "$status" -eq 0 ]; then
-  echo "check-reference-examples: $checked quoted fixture files match $fixture"
-fi
-exit "$status"
+finish "$checked quoted fixture files match $fixture"

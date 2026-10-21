@@ -5,15 +5,10 @@
 # which can be `off`. The audit's opt-out table names each as `<Key>: no` (or
 # `Fuzzing: off`), so a piece added to the setup cannot be silently reported.
 set -euo pipefail
+. "$(dirname "$0")/lib.sh"
 
-answers=skills/go-security-setup/assets/go-security.md
-audit=skills/go-security-audit/SKILL.md
-
-status=0
-fail() {
-  echo "check-audit-opt-outs: $*" >&2
-  status=1
-}
+answers=$answers_asset
+audit=$audit_skill
 
 [ -f "$answers" ] || fail "missing $answers"
 [ -f "$audit" ] || fail "missing $audit"
@@ -34,7 +29,4 @@ grep -q -- '^- Fuzzing: ' "$answers" || fail "$answers: no Fuzzing line"
 grep -qF -- '| `Fuzzing: off` |' "$audit" || fail "$audit: the opt-out table has no row for \`Fuzzing: off\`"
 checked=$((checked + 1))
 
-if [ "$status" -eq 0 ]; then
-  echo "check-audit-opt-outs: $audit leaves out all $checked pieces the setup answers can opt out of"
-fi
-exit "$status"
+finish "$audit leaves out all $checked pieces the setup answers can opt out of"

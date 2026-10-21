@@ -3,21 +3,13 @@
 # announce them disagree: the Claude Code marketplace manifest, the README and
 # each skill's license. Adding a skill folder means adding it to all of them.
 set -euo pipefail
-
-status=0
-fail() {
-  echo "check-published-skills: $*" >&2
-  status=1
-}
+. "$(dirname "$0")/lib.sh"
 
 skills=()
 for dir in skills/*/; do
   [ -f "${dir}SKILL.md" ] && skills+=("$(basename "$dir")")
 done
-if [ ${#skills[@]} -eq 0 ]; then
-  echo "check-published-skills: no skill under skills/" >&2
-  exit 1
-fi
+[ ${#skills[@]} -gt 0 ] || die "no skill under skills/"
 
 # Marketplace manifest: one plugin with its source at the repo root and an
 # explicit skills list that is exactly the published folders.
@@ -74,7 +66,4 @@ elif ! grep -qF "$advisories" "$policy"; then
   fail "$policy: does not point to GitHub private vulnerability reporting ($advisories)"
 fi
 
-if [ "$status" -eq 0 ]; then
-  echo "check-published-skills: ${#skills[@]} published skills agree with the manifest, README and licenses"
-fi
-exit "$status"
+finish "${#skills[@]} published skills agree with the manifest, README and licenses"

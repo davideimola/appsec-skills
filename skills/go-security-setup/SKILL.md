@@ -1,6 +1,6 @@
 ---
 name: go-security-setup
-description: Go security CI setup for a Go repo. Use when the user wants security CI set up in a Go repo (govulncheck, fuzzing, Dependabot, a patched toolchain, a security policy), or its schedule, fuzzing or failure policy changed.
+description: Go security CI setup for a Go repo. Use when the user wants security CI set up in a Go repo (govulncheck, fuzzing, Dependabot, a patched toolchain, a security policy), or its schedule, fuzzing or failure policy changed, or where the audit gets govulncheck and gosec from.
 license: MIT
 metadata:
   author: davideimola
@@ -74,7 +74,7 @@ The link works only once private vulnerability reporting is on: `gh api repos/<o
 <!-- shared: scanner-sources -->
 - **Ephemeral run**, the default: `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...` and `go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 -no-fail ./...`, in the module directory. The Go checksum database verifies each version, and nothing is installed. Run exactly these commands, even when the repo has the scanner installed or declares its own tool, so every run uses the same checker.
 - **Shell**: `govulncheck ./...` and `gosec -no-fail ./...`, in the module directory, with the binary on the `PATH` at whatever version it is: `go version -m "$(command -v <binary>)"` prints that version on its `mod` line.
-- **MCP tool**: a tool an MCP server gives your agent, named by the tool and its server. It takes the module directory's absolute path, not `.` or a path relative to the repo root, and one call scans one module, as `./...` does. It is a source of `govulncheck` only when its results mark each vulnerability called, imported or required, and a source of gosec only when they give each signal's `rule_id`, `severity`, `file`, `line` and `details.cwe`. A tool that gives less is a different scanner, not a source: osv-scanner, for one, does not say whether the code calls a vulnerability.
+- **MCP tool**: a tool an MCP server gives your agent, named by the tool and its server. Call it once per module directory, with its absolute path, not `.` or a path relative to the repo root. It is a source of `govulncheck` only when its results give, for each vulnerability, whether the code calls it, imports its package or only requires its module, the version that fixes it, and the call traces of a called one. It is a source of gosec only when they give each signal's rule, file, line and CWE, whatever the fields are named. A tool that gives less is a different scanner, not a source: osv-scanner, for one, does not say whether the code calls a vulnerability.
 <!-- /shared: scanner-sources -->
 
 Before saving a source other than an ephemeral run, check it, and when the check fails, tell the user why and ask the question again:
@@ -84,7 +84,7 @@ Before saving a source other than an ephemeral run, check it, and when the check
 
 ## Questions
 
-Ask the seven questions in this order, one per message, and wait for each answer before the next. Open each with its recommended answer, so the user can accept it in one word: the saved answer when the [answers file](#answers-file) exists, otherwise the default below. Action versions, runners and permissions come from the asset and are never a question.
+Ask the seven questions in this order, one per message, and wait for each answer before the next. Open each with its recommended answer, so the user can accept it in one word: the saved answer when the [answers file](#answers-file) has one, otherwise the default below. Action versions, runners and permissions come from the asset and are never a question.
 
 | # | Question | Default | Other answers | Skip it when |
 |---|---|---|---|---|
@@ -93,7 +93,7 @@ Ask the seven questions in this order, one per message, and wait for each answer
 | 3 | Weekly fuzzing, and how long per fuzz target | on, `1m` | off; another Go duration | the security workflow is not installed |
 | 4 | Failure policy for a reachable vulnerability | fail the run | report only: the run shows the vulnerabilities and passes | the security workflow is not installed, or an existing workflow covers govulncheck (step 1), so its `govulncheck` step may go |
 | 5 | Where vulnerabilities are reported | GitHub private vulnerability reporting | an email address or a URL | a security policy is not installed, or the repo already has `SECURITY.md`, `.github/SECURITY.md` or `docs/SECURITY.md` |
-| 6 | Where the audit gets `govulncheck` from, as in [Scanner sources](#scanner-sources) | an ephemeral run | the shell; an MCP tool, named by the tool and its server | never: the audit reads it whatever is installed |
+| 6 | Where the audit gets `govulncheck` from, as in [Scanner sources](#scanner-sources) | an ephemeral run | the shell; an MCP tool, named by the tool and its server | never, even when nothing else is installed: the audit reads it |
 | 7 | Where the audit gets gosec from, as in [Scanner sources](#scanner-sources) | an ephemeral run | the shell; an MCP tool, named by the tool and its server | never |
 
 A skipped question keeps its recommended answer in the answers file, so a later run that needs it offers it again. When question 5 is skipped because a policy exists, its answer is `existing` plus that file's path in backticks.
@@ -113,7 +113,7 @@ The answers live in the target repo at `docs/agents/go-security.md`, next to the
 | `Fuzz time per target` | `1m` in backticks | the duration in backticks |
 | `Reachable vulnerability` | `fail` | `fail` or `report` |
 | `Channel` | `GitHub private vulnerability reporting` | the same, `email ` plus the address, the URL, or `existing` plus the policy file in backticks |
-| `govulncheck` | `ephemeral run` | `ephemeral run`; `shell, ` plus the version the check showed, in backticks; or `MCP tool ` plus the tool in backticks, ` from ` and the server in backticks |
+| `govulncheck` | `ephemeral run` | `ephemeral run`, `shell`, or `MCP tool ` plus the tool in backticks, ` from ` and the server in backticks |
 | `gosec` | `ephemeral run` | as for `govulncheck` |
 
 The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, and you never edit either of them.
@@ -145,7 +145,7 @@ The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, a
 
    Done when the user has confirmed. If they ask for any change outside the adapted values, explain that the rest of the workflow is the tested asset and leave it as it is.
 
-5. **Write and check.** Write the file to the install path. Then, in each module directory, run `go mod verify`, `go vet ./...` and `go test ./...`, and run `govulncheck` from the source question 6 chose, as in [Scanner sources](#scanner-sources).
+5. **Write and check.** Write the file to the install path. Then, in each module directory, run `go mod verify`, `go vet ./...` and `go test ./...`, and run `govulncheck` from the source question 6 chose, as in [Scanner sources](#scanner-sources). From the shell or as an ephemeral run, exit code 0 passes and 3 means a called vulnerability; from an MCP tool, its results' called vulnerabilities are what the workflow will report, and a tool error is a failure.
 
    Done when the file is written, `git status --porcelain .github/` lists only that file (new, or modified on a re-run), and you have reported, per module, which of those commands passed and which failed. A failure here is what the workflow will also report on its first run, so show the output; it does not undo the install.
 

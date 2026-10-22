@@ -3,7 +3,10 @@
 #   1. the asset carries the default answer on each answer's line;
 #   2. a non-default answer, applied as the skill applies it (one line
 #      replaced, nothing else), is still a workflow actionlint and zizmor
-#      accept, and the skill's adapted-values table names any fixed line.
+#      accept, and the skill's adapted-values table names any fixed line;
+#   3. the answers file asset records those defaults, and an ephemeral run as
+#      the source of each scanner under "Scanner sources", each of which has a
+#      row in the skill's answers file table.
 # ZIZMOR overrides the zizmor command (default: pipx run zizmor at the version
 # in tools.env).
 set -euo pipefail
@@ -88,13 +91,15 @@ expect 'Fuzzing' "$(value 'Fuzzing')" on
 expect 'Fuzz time per target' "$(value 'Fuzz time per target')" "\`$(yq '.jobs.security.steps[-1].env.FUZZ_TIME' "$asset")\`"
 expect 'Reachable vulnerability' "$(value 'Reachable vulnerability')" fail
 expect 'Channel' "$(value 'Channel')" 'GitHub private vulnerability reporting'
-# Each scanner's source defaults to an ephemeral run, and the setup's answers
-# file table names a row for it.
-for key in govulncheck gosec; do
-  expect "$key" "$(value "$key")" 'ephemeral run'
-  grep -qF -- "| \`$key\` | \`ephemeral run\` |" "$skill" || die "$skill: the answers file table has no row for \`$key\`"
-done
 echo "$check: $answers records the defaults the workflow asset carries"
+
+sources=$(awk '/^## Scanner sources/ { inside = 1; next } inside && /^## / { exit } inside && /^- [^:]+: / { sub(/^- /, ""); sub(/: .*/, ""); print }' "$answers")
+[ -n "$sources" ] || die "$answers: no keys under '## Scanner sources'"
+while IFS= read -r key; do
+  [ "$(value "$key")" = 'ephemeral run' ] || die "$answers: the source of '$key' is '$(value "$key")', not the default 'ephemeral run'"
+  grep -qF -- "| \`$key\` | \`ephemeral run\` |" "$skill" || die "$skill: the answers file table has no row for \`$key\`"
+done <<<"$sources"
+echo "$check: $answers records an ephemeral run as the source of $(printf '%s\n' "$sources" | paste -sd ' ' -)"
 
 actionlint "${variants[@]}"
 $zizmor --offline "${variants[@]}"

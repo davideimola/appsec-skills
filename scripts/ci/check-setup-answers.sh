@@ -88,6 +88,12 @@ expect 'Fuzzing' "$(value 'Fuzzing')" on
 expect 'Fuzz time per target' "$(value 'Fuzz time per target')" "\`$(yq '.jobs.security.steps[-1].env.FUZZ_TIME' "$asset")\`"
 expect 'Reachable vulnerability' "$(value 'Reachable vulnerability')" fail
 expect 'Channel' "$(value 'Channel')" 'GitHub private vulnerability reporting'
+# Each scanner's source defaults to an ephemeral run, and the setup's answers
+# file table names a row for it.
+for key in govulncheck gosec; do
+  expect "$key" "$(value "$key")" 'ephemeral run'
+  grep -qF -- "| \`$key\` | \`ephemeral run\` |" "$skill" || die "$skill: the answers file table has no row for \`$key\`"
+done
 echo "$check: $answers records the defaults the workflow asset carries"
 
 actionlint "${variants[@]}"

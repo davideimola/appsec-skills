@@ -20,6 +20,7 @@ A grilling session on what this repo should be, starting from the brief of the t
   - **`authz-audit`:** language-agnostic and tied to Argus tools (`add_finding`, `run_sast`).
   - **Toolbox mode** (no LLM provider): `/mcp` exposes every scanner installed on the host (including `run_govulncheck` and `run_gosec`) and the skills (`pkg/daemon/session.go`, `buildRegistry`).
   - **Release state:** the Go scanners are on main (#118, 2026-10-15) but not in a release; the latest release is v0.3.0.
+    - *Update 2026-10-22:* Argus v0.4.0 (2026-10-21) ships the Tool Catalog and Toolbox mode (`docs/research/2026-10-22-cross-ecosystem-security-tools.md`).
 - **`/setup-matt-pocock-skills`** writes only `docs/agents/*.md`, `GLOSSARY.md`, `docs/adr/` and an `## Agent skills` block in `CLAUDE.md` or `AGENTS.md`. It does not copy skills into the repo.
 
 ## Decisions

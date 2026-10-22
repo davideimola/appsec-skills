@@ -1,15 +1,10 @@
-# Running a scanner with your agent's tool
+# Running a scanner from an MCP tool
 
-Read this when step 4 or step 5 runs `govulncheck` or gosec with a tool your agent provides, such as one from an MCP server, instead of from the shell.
-
-## Both scanners
-
-- A tool that takes a path needs the module directory's absolute path, not `.` or a path relative to the repo root.
-- One call scans one module, as `./...` does from the shell: call it once per module directory.
+Read this when step 4 or step 5 runs `govulncheck` or gosec from an MCP tool source. Pass each call the module directory's absolute path, once per module, as the Scanner sources section says.
 
 ## govulncheck (step 4)
 
-When the tool returns structured results instead of govulncheck's text, each vulnerability is marked called, imported or required:
+The tool's results mark each vulnerability called, imported or required:
 
 - Each called vulnerability is a High finding, as step 4 says for `=== Symbol Results ===`, with its call traces as the example traces.
 - The imported and required ones add up to the module's unreachable count.

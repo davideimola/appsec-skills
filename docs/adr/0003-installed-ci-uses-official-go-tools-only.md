@@ -6,3 +6,5 @@ The workflow `go-security-setup` installs uses only official Go tooling: `go mod
 
 - **golangci-lint with gosec and staticcheck in the installed CI**: rejected for v1. It brings more third-party code and configuration into the user's pipeline.
 - **CodeQL**: rejected. It is not Go-specific, and on private repos it requires GitHub Advanced Security.
+
+Superseded in part by ADR 0011: the audit may also run gosec from the shell or an MCP tool, when the owner chooses it.

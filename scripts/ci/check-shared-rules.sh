@@ -11,7 +11,7 @@ set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
 skills=("$setup_skill" "$audit_skill")
-blocks=(toolchain)
+blocks=(toolchain scanner-sources)
 
 mkwork
 

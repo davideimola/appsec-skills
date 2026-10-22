@@ -24,13 +24,13 @@ jobs:
       - name: Manifest, README and licenses list exactly the published skills
         run: scripts/ci/check-published-skills.sh
 
-      - name: Argus appears only in the README section and once in the audit
+      - name: Argus appears only in the README's MCP server section and once in the audit
         run: scripts/ci/check-argus-mentions.sh
 
-      - name: The audit leaves out every piece the setup answers can opt out of
+      - name: The audit leaves out every piece the setup answers can opt out of, and reads every scanner source
         run: scripts/ci/check-audit-opt-outs.sh
 
-      - name: The setup and the audit state the toolchain rules and module discovery identically
+      - name: The setup and the audit state the toolchain and scanner source rules and module discovery identically
         run: scripts/ci/check-shared-rules.sh
 
       - name: Agent Skills validator
@@ -65,8 +65,10 @@ jobs:
       - name: govulncheck scans with the Go version setup-go installed from the module's go.mod
         run: scripts/ci/check-govulncheck-go-version.sh
 
-      - name: The audit runs the gosec and govulncheck versions the fixture tracks as direct tool dependencies
-        run: scripts/ci/check-tool-versions.sh
+      - name: The audit and the setup run the gosec and govulncheck versions the fixture tracks as direct tool dependencies
+        run: |
+          scripts/ci/check-tool-versions.sh
+          scripts/ci/check-tool-versions.sh skills/go-security-setup/SKILL.md
 
       - name: Setup answers match the asset's defaults, and every other answer lints clean
         run: scripts/ci/check-setup-answers.sh

@@ -20,6 +20,14 @@ _Avoid_: placeholders, variables, parameters
 What the target repo's owner chose when `go-security-setup` asked, saved in the target repo's **answers file**, `docs/agents/go-security.md`. The audit leaves out what the answers opt out of.
 _Avoid_: config, settings, preferences
 
+**Scanner source**:
+Where the audit gets a scanner (`govulncheck` or gosec) from: an **ephemeral run**, the shell, or an MCP tool. It changes where the scanner runs, never which scanner it is: a tool that does not report what govulncheck reports is not a source of govulncheck. The owner picks one per scanner in the setup answers.
+_Avoid_: provider (Argus uses it for LLM providers), backend, install
+
+**Ephemeral run**:
+Running a scanner as `go run <module>@<exact version>`: the Go checksum database verifies it and nothing is installed. The default scanner source.
+_Avoid_: go run install, one-off install
+
 **Fixture**:
 The small Go module that exists only so canonical assets and reference examples can be proven to work.
 _Avoid_: example app, sample service, demo

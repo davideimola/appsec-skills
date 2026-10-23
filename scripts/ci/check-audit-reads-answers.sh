@@ -4,6 +4,8 @@
 # pieces: each `- <Key>: yes...` line under "What to install", plus Fuzzing,
 # which can be `off`. The audit's opt-out table names each as `<Key>: no` (or
 # `Fuzzing: off`), so a piece added to the setup cannot be silently reported.
+# Each scanner under "Scanner sources" must be read by the audit too, as
+# `<key>:`, so a source the setup saves cannot be silently ignored.
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
@@ -29,4 +31,10 @@ grep -q -- '^- Fuzzing: ' "$answers" || fail "$answers: no Fuzzing line"
 grep -qF -- '| `Fuzzing: off` |' "$audit" || fail "$audit: the opt-out table has no row for \`Fuzzing: off\`"
 checked=$((checked + 1))
 
-finish "$audit leaves out all $checked pieces the setup answers can opt out of"
+sources=$(awk '/^## Scanner sources/ { inside = 1; next } inside && /^## / { exit } inside && /^- [^:]+: / { sub(/^- /, ""); sub(/: .*/, ""); print }' "$answers")
+[ -n "$sources" ] || fail "$answers: no keys under '## Scanner sources'"
+while IFS= read -r key; do
+  grep -qF -- "\`$key:\`" "$audit" || fail "$audit: does not read the scanner source \`$key:\`"
+done <<<"$sources"
+
+finish "$audit leaves out all $checked pieces the setup answers can opt out of, and reads every scanner source"

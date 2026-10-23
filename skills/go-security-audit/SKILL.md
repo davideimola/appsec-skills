@@ -37,14 +37,28 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 | `Security policy: no` | Any finding or suggested fix saying the repo lacks a security policy (`SECURITY.md`) |
 | `Fuzzing: off` | Any finding or suggested fix proposing a scheduled fuzz run |
 
+## Scanner sources
+
+Steps 4 and 5 run `govulncheck` and gosec from the source the answers file names under `## Scanner sources`, on its `govulncheck:` and `gosec:` lines: the owner's choice of where each scanner runs, never of which scanner it is. With no answers file, or no line for a scanner, its source is an ephemeral run.
+
+<!-- shared: scanner-sources -->
+- **Ephemeral run**, the default: `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...` and `go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 -no-fail ./...`, in the module directory. The Go checksum database verifies each version, and nothing is installed. Run exactly these commands, even when the repo has the scanner installed or declares its own tool, so every run uses the same checker.
+- **Shell**: `govulncheck ./...` and `gosec -no-fail ./...`, in the module directory, with the binary on the `PATH` at whatever version it is: `go version -m "$(command -v <binary>)"` prints that version on its `mod` line.
+- **MCP tool**: a tool an MCP server gives your agent, named by the tool and its server. Call it once per module directory, with its absolute path, not `.` or a path relative to the repo root. It is a source of `govulncheck` only when its results give, for each vulnerability, whether the code calls it, imports its package or only requires its module, the version that fixes it, and the call traces of a called one. It is a source of gosec only when they give each signal's rule, file, line and CWE, whatever the fields are named. A tool that gives less is a different scanner, not a source: osv-scanner, for one, does not say whether the code calls a vulnerability.
+<!-- /shared: scanner-sources -->
+
+An MCP tool is the tool your agent provides through an MCP server, for example `run_govulncheck` or `run_gosec` from Argus in Toolbox mode. Before running a scanner from one, read [references/mcp-tool-sources.md](references/mcp-tool-sources.md): it says how its results map to the text steps 4 and 5 read.
+
+A source is unavailable when the shell has no such binary, or your agent has no such tool, or the tool's results lack what the list above requires. Then ask once for that scanner: "<the source> is not available. Run <scanner> as an ephemeral run instead? yes or no". With yes, run the ephemeral run. With no, the check did not run for any module: report it under `Not run` with the reason, and that running `go-security-setup` again changes the source. Never run a scanner from a source the answers do not name, other than the ephemeral run the user accepted.
+
 ## Steps
 
 1. **Read the target repo.**
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
    - Baseline: record the output of `git status --porcelain`.
-   - Setup answers: read `docs/agents/go-security.md` if it exists, and note each answer from the [Setup answers](#setup-answers) table it gives.
+   - Setup answers: read `docs/agents/go-security.md` if it exists, and note each answer from the [Setup answers](#setup-answers) table it gives, and each scanner's source from [Scanner sources](#scanner-sources).
 
-   Done when you have at least one module directory, the baseline, and the answers that leave something out (or none). With no `go.mod`, stop and tell the user this skill is for Go repos.
+   Done when you have at least one module directory, the baseline, the answers that leave something out (or none), and a source for each scanner. With no `go.mod`, stop and tell the user this skill is for Go repos.
 
 2. **Verify modules.** In each module directory, run `go mod verify`.
 
@@ -69,13 +83,13 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
    Done when every module has a result, with the `go.mod` line as evidence for each finding, or the step is skipped because of `Toolchain check: no`. If the release list cannot be fetched, the check did not run: say so in the report.
 
-4. **Run govulncheck.** In each module directory, run `govulncheck ./...` from the shell or with the tool your agent provides (for example `run_govulncheck` from an MCP server such as Argus in Toolbox mode); with a tool, read [references/agent-tools.md](references/agent-tools.md) first: it says what path to pass and how its results map to the text below. When neither has it, run `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`, which the Go checksum database verifies and which installs nothing. Exit code 0 means no vulnerability is called and 3 means at least one is; any other exit code means the scan failed, so report its output as a check that did not run.
+4. **Run govulncheck.** In each module directory, run `govulncheck` from its source, as in [Scanner sources](#scanner-sources). From the shell or as an ephemeral run, exit code 0 means no vulnerability is called and 3 means at least one is; any other exit code means the scan failed, so report its output as a check that did not run.
    - Each vulnerability under `=== Symbol Results ===` is a High finding. Evidence: its ID, module, `Found in` and `Fixed in` versions, and its example traces with their `file:line`. Hypothesis: the code at the trace reaches the vulnerable symbol. Suggested fix, a mechanical fix: `go get <module>@<fixed version>` then `go mod tidy`, or for a standard library module, a toolchain bump (step 3) to a release at or above the fixed version.
    - The closing summary counts the vulnerabilities in packages you import and in modules you require that your code doesn't call. Add the two numbers: that sum is the module's unreachable count.
 
    Done when every module has its list of called vulnerabilities (possibly empty) and its unreachable count, or a recorded scan failure.
 
-5. **Run gosec.** In each module directory, run gosec with the tool your agent provides, or from the shell as `go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 -no-fail ./...`. From the shell, run exactly that command even when the repo has gosec installed or declares its own gosec tool: that version is verified by the Go checksum database and installs nothing, so every audit runs the same checker. With a tool, read [references/agent-tools.md](references/agent-tools.md) first, as in step 4. The shell output ends with a summary whose `Issues` line counts the signals. A `Golang errors in file` block means gosec could not load that file, so the file was not checked even when `Issues` is 0: report the block as a check that did not run for those files. `export data version` in it means this gosec version cannot read packages built by the module's Go release. Any error that stops the scan means the check did not run for the module.
+5. **Run gosec.** In each module directory, run gosec from its source, as in [Scanner sources](#scanner-sources). The text output ends with a summary whose `Issues` line counts the signals. A `Golang errors in file` block means gosec could not load that file, so the file was not checked even when `Issues` is 0: report the block as a check that did not run for those files. `export data version` in it means this gosec version cannot read packages built by the module's Go release. Any error that stops the scan means the check did not run for the module.
 
    Each issue, `[<file>:<line>] - <rule> (CWE-<n>): <message> (Confidence: <level>, Severity: <level>)` followed by the code around that line, is a signal to triage; gosec's own severity is not the finding's. For each one, open the code at that `file:line` and follow the flagged value back to where it comes from:
    - **Confirmed**: the code shows the weakness is real, because a value from outside the program (a request, a file, an environment variable, an argument) reaches the flagged line, or the weakness holds whatever the input (for example a disabled TLS check). It is a finding: High when input from outside the program reaches it, Medium otherwise. Evidence: the gosec issue line, plus the `file:line` where the value enters. Hypothesis: what an attacker or a mistake can do there. Suggested fix: the code change, in one or two sentences.
@@ -98,7 +112,7 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
    ```
    ## Go security audit
 
-   Checks: go mod verify, toolchain, govulncheck, gosec <version run>, patterns (<modules audited>)
+   Checks: go mod verify, toolchain, govulncheck <version run, or unknown> (<source>), gosec <version run, or unknown> (<source>), patterns (<modules audited>)
    Findings: <total> (<n> Critical, <n> High, <n> Medium)
 
    ### 1. [<Severity>] <short title> (<module>)
@@ -114,7 +128,7 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
    When the user asks for a markdown report, write the same content to the path they give, and to `go-security-audit-<YYYY-MM-DD>.md` at the repo root when they give none.
 
-   Done when every finding from steps 2 to 6 is in the report with all four parts, the unreachable count is in the context line, every dismissed gosec signal is listed with its reason, every setup answer from step 1 that left something out is in the `Opted out` line, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).
+   Done when every finding from steps 2 to 6 is in the report with all four parts, the `Checks` line names the source each scanner ran from, the unreachable count is in the context line, every dismissed gosec signal is listed with its reason, every setup answer from step 1 that left something out is in the `Opted out` line, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).
 
 8. **Apply the confirmed mechanical fixes.** When no finding has a mechanical fix, go to step 9. Otherwise:
    - Prepare every mechanical fix as the finding's suggested fix says, and show each as a unified diff, numbered by its finding.

@@ -5,3 +5,5 @@ The skills are written tool-neutral ("run govulncheck from the shell or with the
 ## Consequences
 
 - The Argus release that ships the Tool Catalog and Toolbox mode is the maintainer's job before the talk, so it does not gate this repo. The Argus mentions are tested against Argus built from main: the skills in `~/.argus/skills/`, read through an MCP client.
+
+Superseded in part by ADR 0011: the skills no longer pick between the shell and the agent's tool; the owner chooses each scanner's source in the setup, and Argus is an example of an MCP tool source.

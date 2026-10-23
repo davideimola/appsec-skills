@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Fails unless each scanner version the audit skill runs from the shell is the
-# one the fixture declares, so a Dependabot bump of the fixture's tool must also
-# bump the skill. For gosec and govulncheck:
+# Fails unless each scanner version the audit skill runs as an ephemeral run is
+# the one the fixture declares, so a Dependabot bump of the fixture's tool must
+# also bump the skill. For gosec and govulncheck:
 #   1. the fixture's go.mod declares the command as a tool;
 #   2. the fixture requires its module as a direct dependency (no `// indirect`):
 #      Dependabot's default version updates cover direct dependencies only, and
@@ -16,7 +16,7 @@ set -euo pipefail
 skill=${1:-$audit_skill}
 gomod=${2:-$fixture/go.mod}
 
-# module:command, one per scanner the audit runs with `go run <command>@<v>`.
+# module:command, one per scanner the skill runs with `go run <command>@<v>`.
 tools=(
   github.com/securego/gosec/v2:github.com/securego/gosec/v2/cmd/gosec
   golang.org/x/vuln:golang.org/x/vuln/cmd/govulncheck

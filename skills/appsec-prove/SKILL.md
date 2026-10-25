@@ -66,6 +66,8 @@ For any other language, tell the user there is no reference for it yet and stop:
    Check: <func> (<file:line>), rule: <the explicit ways in>
    Evidence: <the failing test and its `granted:` line with the input>, or <the named case passing, the commands run, the budget>
    Also found: <each other `granted:` input and the rule it breaks>, or none
+   Assumptions: <how each faked service is assumed to behave where the code does not show it>, or none
+   Existing tests: <tests of this check that still pass on today's code, and the case they miss>, or none
    Tests kept: <files>, run with <the step 4 commands>
    ```
 

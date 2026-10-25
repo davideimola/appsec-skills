@@ -11,7 +11,7 @@ Where the tests go, what they are called, the commands and the budget for a chec
 - **Relations**: fast-check generates at random and is not coverage-guided, so two independent `fc.string()` values are almost never equal and a rule that compares IDs is never exercised on its equal branch. For each relation the rule depends on (same org, same owner), add a `fc.boolean()` that makes one input equal to the other, as `sameOrg` and `isOwner` do in the example. Measured on the fixture: with independent strings, the member-instead-of-admin bug was caught in 1 of 30 runs and the empty-ID bug in 23 of 30; with the two relations, each in 30 of 30.
 - **Seed**: none. `examples` starts empty and holds the inputs a failing run finds.
 - **Compile check**: the repo's type check (`npx tsc --noEmit`, or its `typecheck` script).
-- **Repo conventions**: name the files with the repo's own test suffix (`.spec.ts` where its tests are `*.spec.ts`; the commands below then use that suffix), and run the repo's formatter or linter (biome, eslint, prettier, as its scripts or config name it) on the new files only.
+- **Repo conventions**: name the files with the repo's own test suffix (`.spec.ts` where its tests are `*.spec.ts`, so `<file>.spec.ts` and `<file>.prop.spec.ts`; the commands below then use that suffix), and run the repo's formatter or linter (biome, eslint, prettier, as its scripts or config name it) on the new files only.
 
 ## Commands
 
@@ -32,8 +32,8 @@ npx vitest run <dir>/<file>.prop.test.ts
 In a real service the decision is often spread out: a guard (middleware, a GraphQL directive, a decorator) checks the role, the handler asks a service who owns what, and then it writes. Test it as a caller meets it:
 
 - **Entry point**: call the handler wrapped with its guards, built the way the app builds it (its schema with directives applied, its router, its wrapper), never the bare handler: the bare handler skips the guard.
-- **Services**: fake each service the decision reads with an in-memory world the property generates (which org owns which project, which customers a group holds). The world is test data: `allowed` reads the world, never the code under test or a real service.
-- **Granted**: the protected effect reached its sink, the store, backend client or queue the handler writes to, as the fake records it. A refusal is the error the app throws for it; any other error is a crash.
+- **Services**: fake each service the decision reads with an in-memory world the property generates (which org owns which project, which customers a group holds). The world is test data: `allowed` reads the world, never the code under test or a real service. Where you have to guess how the real service behaves (an empty filter, an unknown id), write the guess in a comment next to the fake and report it under Assumptions.
+- **Granted**: the protected effect reached its sink, the store, backend client or queue the handler writes to, as the fake records it. A refusal is the error the app raises for it; any other error is a crash. Where the entry point returns errors instead of throwing them, as `graphql()` returns them in `result.errors`, tell them apart by the app's own error type there (its `originalError`).
 - **Lists**: for a bulk action, generate the list with one relation per item, and ids by index when the rule never reads them. The rule says whether one item it denies refuses the whole request.
 - **Unresolved identifiers**: only the ones the rule reads, such as the caller's organization, not a ticket id it never checks.
 - **Guarded cases**: a denied case the guard already denies passes on today's code. Keep it: it keeps the guard.

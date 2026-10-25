@@ -28,7 +28,7 @@ go test -run '^$' -fuzz '^Fuzz<Func>$' -fuzztime 60s ./<pkg>
 In a real service the decision is often spread out: middleware checks the role, the handler asks a service who owns what, and then it writes. Test it as a caller meets it:
 
 - **Entry point**: build the handler the way the app builds it, with its middleware chain, and serve it with `httptest.NewRecorder` and `httptest.NewRequest`, never the bare handler: the bare handler skips the middleware.
-- **Services**: fake each interface the decision reads with an in-memory world built from the fuzz arguments. The world is test data: `allowed` reads the world, never the code under test or a real service.
+- **Services**: fake each interface the decision reads with an in-memory world built from the fuzz arguments. The world is test data: `allowed` reads the world, never the code under test or a real service. Where you have to guess how the real service behaves, write the guess in a comment next to the fake and report it under Assumptions.
 - **Granted**: the protected effect reached its sink, the store, client or queue the handler writes to, as the fake records it.
 - **Lists**: fuzz arguments are primitives, so encode one relation per item in a `[]byte`, one byte per item, and cap its length. The rule says whether one item it denies refuses the whole request.
 - **Unresolved identifiers**: only the ones the rule reads. **Guarded cases**: a denied case the middleware already denies passes on today's code; keep it.

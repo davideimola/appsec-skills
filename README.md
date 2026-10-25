@@ -29,7 +29,7 @@ claude plugin install go-security-skills@go-security-skills
 
 Or copy a single folder from [`skills/`](skills/) into your agent's skills folder: each skill is self-contained.
 
-Each release is listed on the [releases page](https://github.com/davideimola/go-security-skills/releases) and in the changelog; the Claude Code plugin updates only when a new release is cut.
+The skills are unversioned while in development: installing gives you `main`, and the Claude Code plugin follows its commits. Versioned releases start once the skills have users (ADR 0013).
 
 ## Running the scanners through an MCP server
 

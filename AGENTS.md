@@ -4,7 +4,7 @@ Agent Skills for application security, one pack per ecosystem; Go is the only pa
 
 ## Commits and pull requests
 
-PR titles and commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`, …). PRs are squash-merged, so the PR title becomes the commit on `main` and the changelog entry.
+PR titles and commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`, …). PRs are squash-merged, so the PR title becomes the commit on `main`. Keep the convention while there are no releases (ADR 0013): it becomes the changelog when releases start.
 
 ## Agent skills
 

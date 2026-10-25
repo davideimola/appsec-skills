@@ -7,7 +7,6 @@
   "plugins": [
     {
       "name": "appsec-skills",
-      "version": "1.0.0",
       "description": "Security CI setup, audit and proven fixes; Go today, one pack per ecosystem",
       "source": "./",
       "strict": false,

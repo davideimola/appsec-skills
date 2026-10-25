@@ -1,12 +1,12 @@
 ---
-name: go-security-setup
+name: appsec-setup
 description: Go security CI setup for a Go repo. Use when the user wants security CI set up in a Go repo (govulncheck, fuzzing, Dependabot, a patched toolchain, a security policy), or its schedule, fuzzing or failure policy changed, or where the audit gets govulncheck and gosec from.
 license: MIT
 metadata:
   author: davideimola
 ---
 
-Install the canonical security workflow and Dependabot config into the **target repo**, the repo you are running in, check that each module's `go.mod` pins a patched toolchain, add a security policy if it has none, and record where `go-security-audit` gets its scanners from.
+Install the canonical security workflow and Dependabot config into the **target repo**, the repo you are running in, check that each module's `go.mod` pins a patched toolchain, add a security policy if it has none, and record where `appsec-audit` gets its scanners from.
 
 The workflow is a **canonical asset**: [`assets/security.yml`](assets/security.yml) is tested in the CI of the repo that ships this skill, with every action pinned to a full commit SHA and read-only permissions. Your job is to **copy and adapt** it, never to write or "improve" CI yourself. Every action, SHA, version comment, permission, runner and step stays exactly as in the asset.
 
@@ -69,7 +69,7 @@ The link works only once private vulnerability reporting is on: `gh api repos/<o
 
 ## Scanner sources
 
-`go-security-audit` runs two scanners, `govulncheck` and gosec. Questions 6 and 7 choose where it gets each one from: its **source**. A source changes where a scanner runs, never which scanner it is. Step 5 runs `govulncheck` from the source question 6 chose.
+`appsec-audit` runs two scanners, `govulncheck` and gosec. Questions 6 and 7 choose where it gets each one from: its **source**. A source changes where a scanner runs, never which scanner it is. Step 5 runs `govulncheck` from the source question 6 chose.
 
 <!-- shared: scanner-sources -->
 - **Ephemeral run**, the default: `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...` and `go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 -no-fail ./...`, in the module directory. The Go checksum database verifies each version, and nothing is installed. Run exactly these commands, even when the repo has the scanner installed or declares its own tool, so every run uses the same checker.
@@ -100,7 +100,7 @@ A skipped question keeps its recommended answer in the answers file, so a later 
 
 ## Answers file
 
-The answers live in the target repo at `docs/agents/go-security.md`, next to the other agent docs, for people and agents (including `go-security-audit`) to read. It is a canonical asset too: copy [`assets/go-security.md`](assets/go-security.md) byte for byte, then change only the text after `- <Key>: ` on these lines.
+The answers live in the target repo at `docs/agents/appsec.md`, next to the other agent docs, for people and agents (including `appsec-audit`) to read. It is a canonical asset too: copy [`assets/appsec.md`](assets/appsec.md) byte for byte, then change only the text after `- <Key>: ` on these lines.
 
 | Key | In the asset | Set it to |
 |---|---|---|
@@ -123,7 +123,7 @@ The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, a
 1. **Read the target repo.**
    - Default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix. If neither answers, ask the user.
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
-   - Saved answers: read `docs/agents/go-security.md` if it exists.
+   - Saved answers: read `docs/agents/appsec.md` if it exists, or else `docs/agents/go-security.md`, the name the skills used as `go-security-skills`.
    - Install path: the workflow the saved answers name under `Security workflow`, when that file exists: it is the one this skill installed, and a re-run updates it. Otherwise `.github/workflows/security.yml`, or `.github/workflows/go-security.yml` if that file already exists. If both exist, stop and tell the user: you never edit an existing workflow.
    - Existing govulncheck: search every file in `.github/workflows/` for `govulncheck`, except the install path on a re-run. For each run, note its `file:line`, its triggers, and the module directories it runs in (its `working-directory`, `work-dir` or matrix; the root when none is set).
    - Toolchain: for each module, its `go` and `toolchain` lines and its status, as in [Toolchain](#toolchain).
@@ -165,7 +165,7 @@ The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, a
 
    Done when the existing policy is reported and `git status --porcelain` lists none of the policy files, or the user has confirmed and `SECURITY.md` is written, with a diff against the asset showing only the reporting line changed and the `## Scope` section removed.
 
-10. **Save the answers.** Adapt `assets/go-security.md` as in [Answers file](#answers-file), with every answer from step 2 and the paths actually written. Show it, with its diff against the saved file on a re-run, then write it to `docs/agents/go-security.md`, creating `docs/agents/` if needed.
+10. **Save the answers.** Adapt `assets/appsec.md` as in [Answers file](#answers-file), with every answer from step 2 and the paths actually written. Show it, with its diff against the saved file on a re-run, then write it to `docs/agents/appsec.md`, creating `docs/agents/` if needed. When the saved answers came from `docs/agents/go-security.md`, show its removal in the same diff and delete it once the new file is written.
 
    Done when the file is written and a diff against the asset shows changes only after `- <Key>: ` on the lines in the answers file table.
 

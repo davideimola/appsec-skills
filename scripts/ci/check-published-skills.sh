@@ -33,9 +33,9 @@ readme=README.md
 if [ ! -f "$readme" ]; then
   fail "missing $readme"
 else
-  for cmd in 'npx skills add davideimola/go-security-skills' \
-    'claude plugin marketplace add davideimola/go-security-skills' \
-    'claude plugin install go-security-skills@go-security-skills'; do
+  for cmd in 'npx skills add davideimola/appsec-skills' \
+    'claude plugin marketplace add davideimola/appsec-skills' \
+    'claude plugin install appsec-skills@appsec-skills'; do
     grep -qF "$cmd" "$readme" || fail "$readme: missing install command: $cmd"
   done
   linked=$(grep -oE '\(skills/[a-z0-9-]+/\)' "$readme" | sed -E 's#^\(skills/##; s#/\)$##' | sort -u)
@@ -59,7 +59,7 @@ done
 
 # Security policy: reports go through GitHub private vulnerability reporting.
 policy=SECURITY.md
-advisories='https://github.com/davideimola/go-security-skills/security/advisories/new'
+advisories='https://github.com/davideimola/appsec-skills/security/advisories/new'
 if [ ! -f "$policy" ]; then
   fail "missing $policy"
 elif ! grep -qF "$advisories" "$policy"; then

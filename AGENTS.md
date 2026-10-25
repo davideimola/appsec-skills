@@ -1,6 +1,6 @@
-# go-security-skills
+# appsec-skills
 
-Agent Skills for Go security. The design and its rationale are in `docs/design/2026-10-21-design-session.md`.
+Agent Skills for application security, one pack per ecosystem; Go is the only pack today (ADR 0012). The design and its rationale are in `docs/design/2026-10-21-design-session.md`.
 
 ## Commits and pull requests
 
@@ -10,7 +10,7 @@ PR titles and commit messages follow [Conventional Commits](https://www.conventi
 
 ### Issue tracker
 
-Issues live in GitHub Issues for davideimola/go-security-skills, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues for davideimola/appsec-skills, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

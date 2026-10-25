@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Report vulnerabilities privately through GitHub private vulnerability reporting: [open a draft advisory](https://github.com/davideimola/go-security-skills/security/advisories/new). Please do not open a public issue.
+Report vulnerabilities privately through GitHub private vulnerability reporting: [open a draft advisory](https://github.com/davideimola/appsec-skills/security/advisories/new). Please do not open a public issue.
 
 Include what is affected, how to reproduce the problem, and what an attacker could do with it.
 

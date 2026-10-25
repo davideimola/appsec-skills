@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Proves the go-security-setup security policy asset against the answers:
+# Proves the appsec-setup security policy asset against the answers:
 #   1. the asset's reporting line is the default channel (GitHub private
 #      vulnerability reporting) for this repo, exactly once;
 #   2. SKILL.md names every reporting line the skill may write instead, each
@@ -17,7 +17,7 @@ answers=$answers_asset
 
 [ -f "$asset" ] || die "missing $asset"
 
-repo=davideimola/go-security-skills
+repo=davideimola/appsec-skills
 suffix=' Please do not open a public issue.'
 pvr_prefix='Report vulnerabilities privately through GitHub private vulnerability reporting: [open a draft advisory](https://github.com/'
 pvr_line="${pvr_prefix}${repo}/security/advisories/new).${suffix}"

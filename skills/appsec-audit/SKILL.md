@@ -1,12 +1,12 @@
 ---
-name: go-security-audit
+name: appsec-audit
 description: Security audit of a Go repo or service. Use when the user asks to audit or check the security of Go code, or whether its dependencies or Go version have known vulnerabilities.
 license: MIT
 metadata:
   author: davideimola
 ---
 
-Audit the **target repo** (the repo you are running in) and report **findings**. Up to the report, the audit is read-only: you run checks and report, and the target repo's files stay exactly as you found them. The one file you may write by then is the markdown report, and only when the user asks for it. After the report, you change files only to apply the mechanical fixes the user confirms (step 8), and to prove each logic finding with `verify-with-fuzz` and apply the fix the user confirms once its test fails (step 9).
+Audit the **target repo** (the repo you are running in) and report **findings**. Up to the report, the audit is read-only: you run checks and report, and the target repo's files stay exactly as you found them. The one file you may write by then is the markdown report, and only when the user asks for it. After the report, you change files only to apply the mechanical fixes the user confirms (step 8), and to prove each logic finding with `appsec-prove` and apply the fix the user confirms once its test fails (step 9).
 
 ## Findings
 
@@ -15,7 +15,7 @@ A finding is one problem, reported with these four parts and nothing left blank:
 - **Severity**, from the table below.
 - **Evidence**: what lets someone else check the finding. Quote the tool output it comes from, and give a `file:line` when the tool names one.
 - **Hypothesis**: what the finding claims is wrong, in one sentence.
-- **Suggested fix or skill**: the change that removes the problem. Label it **mechanical fix** when it only changes a version, a default or a configuration value. A finding about who may do what or which input is trusted is a **logic finding**: label it so, and its suggested skill is `verify-with-fuzz` with the hypothesis to hand it, never a fix, because a logic fix needs a failing test first.
+- **Suggested fix or skill**: the change that removes the problem. Label it **mechanical fix** when it only changes a version, a default or a configuration value. A finding about who may do what or which input is trusted is a **logic finding**: label it so, and its suggested skill is `appsec-prove` with the hypothesis to hand it, never a fix, because a logic fix needs a failing test first.
 
 | Severity | When |
 |---|---|
@@ -27,7 +27,7 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
 ## Setup answers
 
-`go-security-setup` records what the owner chose to install in `docs/agents/go-security.md`. When the target repo has that file, each answer below is the owner's decision: leave out what the table says, from the findings and from every suggested fix, and name the answer in the report's `Opted out` line. A `yes` or `on` answer, or no answers file, leaves out nothing.
+`appsec-setup` records what the owner chose to install in `docs/agents/appsec.md`. When the target repo has that file, each answer below is the owner's decision: leave out what the table says, from the findings and from every suggested fix, and name the answer in the report's `Opted out` line. A `yes` or `on` answer, or no answers file, leaves out nothing.
 
 | Answer | Leave out |
 |---|---|
@@ -49,14 +49,14 @@ Steps 4 and 5 run `govulncheck` and gosec from the source the answers file names
 
 An MCP tool is the tool your agent provides through an MCP server, for example `run_govulncheck` or `run_gosec` from Argus in Toolbox mode. Before running a scanner from one, read [references/mcp-tool-sources.md](references/mcp-tool-sources.md): it says how its results map to the text steps 4 and 5 read.
 
-A source is unavailable when the shell has no such binary, or your agent has no such tool, or the tool's results lack what the list above requires. Then ask once for that scanner: "<the source> is not available. Run <scanner> as an ephemeral run instead? yes or no". With yes, run the ephemeral run. With no, the check did not run for any module: report it under `Not run` with the reason, and that running `go-security-setup` again changes the source. Never run a scanner from a source the answers do not name, other than the ephemeral run the user accepted.
+A source is unavailable when the shell has no such binary, or your agent has no such tool, or the tool's results lack what the list above requires. Then ask once for that scanner: "<the source> is not available. Run <scanner> as an ephemeral run instead? yes or no". With yes, run the ephemeral run. With no, the check did not run for any module: report it under `Not run` with the reason, and that running `appsec-setup` again changes the source. Never run a scanner from a source the answers do not name, other than the ephemeral run the user accepted.
 
 ## Steps
 
 1. **Read the target repo.**
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
    - Baseline: record the output of `git status --porcelain`.
-   - Setup answers: read `docs/agents/go-security.md` if it exists, and note each answer from the [Setup answers](#setup-answers) table it gives, and each scanner's source from [Scanner sources](#scanner-sources).
+   - Setup answers: read `docs/agents/appsec.md` if it exists, or else `docs/agents/go-security.md`, the name the skills used as `go-security-skills`, and note each answer from the [Setup answers](#setup-answers) table it gives, and each scanner's source from [Scanner sources](#scanner-sources).
 
    Done when you have at least one module directory, the baseline, the answers that leave something out (or none), and a source for each scanner. With no `go.mod`, stop and tell the user this skill is for Go repos.
 
@@ -118,7 +118,7 @@ A source is unavailable when the shell has no such binary, or your agent has no 
    ### 1. [<Severity>] <short title> (<module>)
    - Evidence: <tool output, file:line>
    - Hypothesis: <what is wrong>
-   - Suggested fix or skill: <the change, labelled mechanical fix when it is one>, or logic finding: `verify-with-fuzz` with <the hypothesis>
+   - Suggested fix or skill: <the change, labelled mechanical fix when it is one>, or logic finding: `appsec-prove` with <the hypothesis>
 
    Context: govulncheck also knows <unreachable count> vulnerabilities in packages and modules this repo requires that its code does not call. They are not findings.
    Dismissed gosec signals: <n>, each as <rule> <file:line>: <reason from the code>
@@ -126,7 +126,7 @@ A source is unavailable when the shell has no such binary, or your agent has no 
    Not run: <each check that did not run, and why>
    ```
 
-   When the user asks for a markdown report, write the same content to the path they give, and to `go-security-audit-<YYYY-MM-DD>.md` at the repo root when they give none.
+   When the user asks for a markdown report, write the same content to the path they give, and to `appsec-audit-<YYYY-MM-DD>.md` at the repo root when they give none.
 
    Done when every finding from steps 2 to 6 is in the report with all four parts, the `Checks` line names the source each scanner ran from, the unreachable count is in the context line, every dismissed gosec signal is listed with its reason, every setup answer from step 1 that left something out is in the `Opted out` line, and `git status --porcelain` prints the baseline from step 1 (plus the markdown report, if the user asked for one).
 
@@ -137,11 +137,11 @@ A source is unavailable when the shell has no such binary, or your agent has no 
    Done when every mechanical fix is applied with its checks passing, reverted with the output that failed, or declined, and `git status --porcelain` prints the baseline plus only the files of the applied fixes (and the markdown report, if the user asked for one).
 
 9. **Prove, then fix, the logic findings.** When no finding is a logic finding, the audit ends here. Otherwise:
-   - Ask once: "Prove these <n> logic findings with `verify-with-fuzz`? It adds tests and changes no code. yes, no, or the numbers to prove." Wait for the answer. A finding it does not confirm stays a hypothesis in the report, and you propose no fix for it.
-   - For each confirmed finding, in the report's order, follow `verify-with-fuzz` with the finding's hypothesis, through its report. When `verify-with-fuzz` is not installed, stop: tell the user each logic finding needs it for a failing test, and propose no fix.
+   - Ask once: "Prove these <n> logic findings with `appsec-prove`? It adds tests and changes no code. yes, no, or the numbers to prove." Wait for the answer. A finding it does not confirm stays a hypothesis in the report, and you propose no fix for it.
+   - For each confirmed finding, in the report's order, follow `appsec-prove` with the finding's hypothesis, through its report. When `appsec-prove` is not installed, stop: tell the user each logic finding needs it for a failing test, and propose no fix.
    - **Not reproduced**: propose no fix. Its tests stay as regression tests.
-   - **Reproduced**, and each entry under **Also found**: only now, with the test failing, prepare the fix to the check. It changes only the decision the tests cover, so the check grants exactly the rule's ways in from `verify-with-fuzz`'s step 1. Show it as a unified diff, with the failing test and its `granted:` line as its evidence, and ask: "Apply this fix to <func>? yes or no." Apply it only on yes; with no, the code stays as it is and the tests stay failing.
-   - In the module, run `go build ./...`, `go vet ./...` and `go test ./...` before applying the fix, and record what fails besides the new tests. After applying, run `verify-with-fuzz`'s After a fix section (its step 4 commands unchanged, then `go test ./<pkg>`), then the three commands again. The fix is verified when the After a fix commands pass and nothing fails that passed before. Otherwise revert the fix and show the output that failed, such as the input still granted. The tests stay either way.
+   - **Reproduced**, and each entry under **Also found**: only now, with the test failing, prepare the fix to the check. It changes only the decision the tests cover, so the check grants exactly the rule's ways in from `appsec-prove`'s step 1. Show it as a unified diff, with the failing test and its `granted:` line as its evidence, and ask: "Apply this fix to <func>? yes or no." Apply it only on yes; with no, the code stays as it is and the tests stay failing.
+   - In the module, run `go build ./...`, `go vet ./...` and `go test ./...` before applying the fix, and record what fails besides the new tests. After applying, run `appsec-prove`'s After a fix section (its step 4 commands unchanged, then `go test ./<pkg>`), then the three commands again. The fix is verified when the After a fix commands pass and nothing fails that passed before. Otherwise revert the fix and show the output that failed, such as the input still granted. The tests stay either way.
    - Tell the user, per logic finding: its result, the fix (applied and verified, reverted with the output that failed, declined, or none proposed), and the test files kept.
 
-   Done when every logic finding is reproduced or not reproduced with `verify-with-fuzz`'s report, or not confirmed for proving; every reproduced one and every Also found entry has its fix applied and verified, reverted with the output that failed, or declined; and `git status --porcelain` prints the baseline plus only the files of the applied mechanical fixes, the test files and `testdata/fuzz/` inputs `verify-with-fuzz` wrote, and the files of the applied logic fixes (and the markdown report, if the user asked for one).
+   Done when every logic finding is reproduced or not reproduced with `appsec-prove`'s report, or not confirmed for proving; every reproduced one and every Also found entry has its fix applied and verified, reverted with the output that failed, or declined; and `git status --porcelain` prints the baseline plus only the files of the applied mechanical fixes, the test files and `testdata/fuzz/` inputs `appsec-prove` wrote, and the files of the applied logic fixes (and the markdown report, if the user asked for one).

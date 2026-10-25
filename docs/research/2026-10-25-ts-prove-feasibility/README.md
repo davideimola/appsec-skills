@@ -8,7 +8,7 @@ Step 1 of the plan in #20: can the prove loop (named cases and a property that f
 
 - `testdata/fixture-ts/`: `canManageOrg` in TypeScript, the fixed version and a vulnerable one side by side, with the same named cases and a fast-check property (vitest, fast-check 4.10.2, TypeScript 7.0.2, all pinned in `package-lock.json`). `VULNERABLE=1` makes vitest resolve the vulnerable module, the equivalent of `-tags vulnerable` (ADR 0008).
 - `scripts/ci/check-ts-property-catches-vulnerable.sh`, run by the `ts-property` job in `checks.yml`: on the vulnerable version the property fails on 10 of 10 random seeds, the denies cases fail and the allows cases pass; the printed counterexample, kept in `examples`, fails the first run; on the fixed version everything passes, the kept example included.
-- `appsec-prove/SKILL.draft.md` with `references/go.md` (today's reference, unchanged) and `references/typescript.md`: a language-neutral draft of `verify-with-fuzz`. Named `.draft.md` so installers do not pick it up (ADR 0006). The TypeScript reference quotes the fixture, but `check-reference-examples.sh` does not check it yet (it only reads `go` fences under `skills/`).
+- A language-neutral draft of `verify-with-fuzz` with a Go and a TypeScript reference, used for the blind runs below. It is not kept in the repo: the TypeScript reference lands in `skills/appsec-prove/` with the TypeScript pack, once CI checks it against the fixture.
 
 ## Findings
 
@@ -19,6 +19,6 @@ Step 1 of the plan in #20: can the prove loop (named cases and a property that f
 
 ## Next
 
-- Port finding 3's fix to `verify-with-fuzz` now: it is a Go bug in the method, independent of the split.
-- After the talk (step 2 in #20): move the draft to `skills/appsec-prove/`, extend `check-reference-examples.sh` to `ts` fences and `testdata/fixture-ts`, and make `check-logic-fix-loop.sh` run the TypeScript commands too.
+- Finding 3's fix landed in `verify-with-fuzz` (#25), now `appsec-prove`.
+- With the TypeScript pack (#20): add the TypeScript reference to `skills/appsec-prove/`, extend `check-reference-examples.sh` to `ts` fences and `testdata/fixture-ts`, and make `check-logic-fix-loop.sh` run the TypeScript commands too.
 - The fixture is not in Dependabot or in the weekly security run, because `.github/dependabot.yml` and `security.yml` must stay byte-identical to the Go assets. Deciding how a pack's fixture is kept up to date is part of the split.

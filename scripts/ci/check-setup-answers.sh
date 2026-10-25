@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Proves the go-security-setup answers against the canonical workflow:
+# Proves the appsec-setup answers against the canonical workflow:
 #   1. the asset carries the default answer on each answer's line;
 #   2. a non-default answer, applied as the skill applies it (one line
 #      replaced, nothing else), is still a workflow actionlint and zizmor

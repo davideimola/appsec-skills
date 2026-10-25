@@ -61,10 +61,10 @@ actionlint() { go run "github.com/rhysd/actionlint/cmd/actionlint@$ACTIONLINT_VE
 # Shared paths, from the repo root.
 fixture=testdata/fixture
 fixture_ts=testdata/fixture-ts
-setup_skill=skills/go-security-setup/SKILL.md
-audit_skill=skills/go-security-audit/SKILL.md
-verify_skill=skills/verify-with-fuzz/SKILL.md
-workflow_asset=skills/go-security-setup/assets/security.yml
-dependabot_asset=skills/go-security-setup/assets/dependabot.yml
-answers_asset=skills/go-security-setup/assets/go-security.md
-policy_asset=skills/go-security-setup/assets/SECURITY.md
+setup_skill=skills/appsec-setup/SKILL.md
+audit_skill=skills/appsec-audit/SKILL.md
+verify_skill=skills/appsec-prove/SKILL.md
+workflow_asset=skills/appsec-setup/assets/security.yml
+dependabot_asset=skills/appsec-setup/assets/dependabot.yml
+answers_asset=skills/appsec-setup/assets/appsec.md
+policy_asset=skills/appsec-setup/assets/SECURITY.md

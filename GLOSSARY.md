@@ -1,8 +1,12 @@
-# Go security skills
+# appsec-skills
 
-Agent Skills that bring the practices of the talk "Securing Go for Production" into a Go repo, and prove that what they write works.
+Application security Agent Skills that prove what they write works. They started from the talk "Securing Go for Production"; Go is the first pack.
 
 ## Skills and what they touch
+
+**Pack**:
+What one ecosystem (Go, TypeScript) adds to the skills: its references, canonical assets and fixture. A pack exists only with its own fixture and CI (ADR 0002); the skills stay one per purpose and read the ecosystem from the target repo (ADR 0012).
+_Avoid_: plugin (the Claude Code install unit), language skill, adapter
 
 **Target repo**:
 The repo a skill is run in, owned by whoever installed the skills.
@@ -17,7 +21,7 @@ The only lines of a canonical asset a skill may change in the target repo, liste
 _Avoid_: placeholders, variables, parameters
 
 **Setup answers**:
-What the target repo's owner chose when `go-security-setup` asked, saved in the target repo's **answers file**, `docs/agents/go-security.md`. The audit leaves out what the answers opt out of.
+What the target repo's owner chose when `appsec-setup` asked, saved in the target repo's **answers file**, `docs/agents/appsec.md`. The audit leaves out what the answers opt out of.
 _Avoid_: config, settings, preferences
 
 **Scanner source**:

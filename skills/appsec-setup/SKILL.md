@@ -39,7 +39,7 @@ Ask the questions in this order, one per message, and wait for each answer befor
 | 1 | Where the audit gets `govulncheck` from, as in [Scanner sources](#scanner-sources) | an ephemeral run | the shell; an MCP tool, named by the tool and its server | the repo has no Go module |
 | 2 | Where the audit gets gosec from, as in [Scanner sources](#scanner-sources) | an ephemeral run | the shell; an MCP tool, named by the tool and its server | the repo has no Go module |
 
-A skipped question keeps its recommended answer in the answers file, so a later run that needs it offers it again; tell the user which questions you skipped and why. The CI platform is not a question yet: GitHub Actions is the only one the appsec skills support.
+A question skipped because the repo has no Go module is saved as `not used`, and a later run that finds a Go module asks it; tell the user which questions you skipped and why. The CI platform is not a question yet: GitHub Actions is the only one the appsec skills support.
 
 ## Answers file
 
@@ -50,7 +50,7 @@ The answers live in the target repo at `docs/agents/appsec.md`, next to the othe
 | `Go` | `testdata/fixture` in backticks | the module directories, each in backticks, separated by `, `, or `none` |
 | `TypeScript` | `testdata/fixture-ts` in backticks | the package directories, each in backticks, separated by `, `, or `none` |
 | `CI platform` | `GitHub Actions` | `GitHub Actions` |
-| `govulncheck` | `ephemeral run` | `ephemeral run`, `shell`, or `MCP tool ` plus the tool in backticks, ` from ` and the server in backticks |
+| `govulncheck` | `ephemeral run` | `ephemeral run`, `shell`, or `MCP tool ` plus the tool in backticks, ` from ` and the server in backticks; `not used` when the repo has no Go module |
 | `gosec` | `ephemeral run` | as for `govulncheck` |
 
 ## Agents block
@@ -74,7 +74,7 @@ So that any agent in the target repo knows the appsec skills are configured and 
 
    Done when each question has an answer or was skipped by its rule, and the source each chose passed its check in [Scanner sources](#scanner-sources).
 
-3. **Show and confirm.** Adapt `assets/appsec.md` as in [Answers file](#answers-file), with the ecosystems from step 1 and the answers from step 2. Show the user the answers file and the agent instructions change, each with its diff (against the asset and the existing file, or against the saved file on a re-run), and ask for confirmation.
+3. **Show and confirm.** Adapt `assets/appsec.md` as in [Answers file](#answers-file), with the ecosystems from step 1 and the answers from step 2, without writing anything yet. Show the user the answers file and the agent instructions change, each with its diff (against the asset and the existing file, or against the saved file on a re-run), and ask for confirmation.
 
    Done when the user has confirmed.
 

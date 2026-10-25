@@ -1,6 +1,6 @@
 # Go security setup answers
 
-`go-security-setup` wrote this file from the owner's answers and offers them as the defaults the next time it runs. `go-security-audit` reads it: it does not report a piece marked `no`, and runs each scanner from the source named under Scanner sources. To change an answer, run the setup again: it applies the change to the installed files and updates this file.
+`appsec-setup` wrote this file from the owner's answers and offers them as the defaults the next time it runs. `appsec-audit` reads it: it does not report a piece marked `no`, and runs each scanner from the source named under Scanner sources. To change an answer, run the setup again: it applies the change to the installed files and updates this file.
 
 ## What to install
 

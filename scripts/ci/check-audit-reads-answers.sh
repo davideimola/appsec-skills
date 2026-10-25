@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fails unless go-security-audit says what it leaves out for every piece the
+# Fails unless appsec-audit says what it leaves out for every piece the
 # setup answers file can mark `no`. The answers asset is the single list of
 # pieces: each `- <Key>: yes...` line under "What to install", plus Fuzzing,
 # which can be `off`. The audit's opt-out table names each as `<Key>: no` (or
@@ -16,7 +16,7 @@ audit=$audit_skill
 [ -f "$audit" ] || fail "missing $audit"
 [ "$status" -eq 0 ] || exit 1
 
-grep -qF 'docs/agents/go-security.md' "$audit" || fail "$audit: does not read docs/agents/go-security.md"
+grep -qF 'docs/agents/appsec.md' "$audit" || fail "$audit: does not read docs/agents/appsec.md"
 
 keys=$(awk '/^## What to install/ { inside = 1; next } inside && /^## / { exit } inside && /^- [^:]+: / { sub(/^- /, ""); sub(/: .*/, ""); print }' "$answers")
 [ -n "$keys" ] || fail "$answers: no keys under '## What to install'"

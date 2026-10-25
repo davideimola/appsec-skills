@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Proves the loop go-security-audit runs for a logic finding, on the fixture:
+# Proves the loop appsec-audit runs for a logic finding, on the fixture:
 # failing test, then fix, then the same test passing, and the test kept.
 #
-# It runs the commands verify-with-fuzz's step 4 tells the agent to run, as the
+# It runs the commands appsec-prove's step 4 tells the agent to run, as the
 # skill writes them, with <Func> and <pkg> filled in for the fixture's
 # CanManageOrg. "Today's code" is the vulnerable build (`-tags vulnerable`);
 # "the confirmed fix" is the default build. It requires:
-#   - the audit to reach verify-with-fuzz for a logic finding and verify the
-#     fix with verify-with-fuzz's "After a fix" section;
+#   - the audit to reach appsec-prove for a logic finding and verify the
+#     fix with appsec-prove's "After a fix" section;
 #   - before the fix, the named cases and the property fail, and the fuzzer
 #     keeps its failing input under testdata/fuzz/;
 #   - that kept input fails plain `go test` on the vulnerable build, so the
@@ -32,11 +32,11 @@ for f in "$audit" "$verify" "$fixture/go.mod"; do
   [ -f "$f" ] || die "missing $f"
 done
 
-grep -qF 'verify-with-fuzz' "$audit" || die "$audit: never reaches verify-with-fuzz"
-grep -qF 'After a fix' "$audit" || die "$audit: does not verify a logic fix with verify-with-fuzz's After a fix section"
+grep -qF 'appsec-prove' "$audit" || die "$audit: never reaches appsec-prove"
+grep -qF 'After a fix' "$audit" || die "$audit: does not verify a logic fix with appsec-prove's After a fix section"
 grep -q '^## After a fix$' "$verify" || die "$verify: no '## After a fix' section"
 
-# The go test lines of the sh block in verify-with-fuzz's step 4.
+# The go test lines of the sh block in appsec-prove's step 4.
 commands=$(awk '
   /^[0-9]+\. \*\*Run it\.\*\*/ { step = 1; next }
   step && /^[0-9]+\. \*\*/ { exit }

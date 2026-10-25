@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fails if a rule that go-security-setup and go-security-audit both state has
+# Fails if a rule that appsec-setup and appsec-audit both state has
 # drifted between them. Each skill installs on its own, so each keeps its own
 # copy, and this check keeps the copies identical:
 #   - each block between `<!-- shared: <name> -->` and `<!-- /shared: <name> -->`
@@ -55,4 +55,4 @@ if [ ${#modules[@]} -eq 2 ] && [ "${modules[0]}" != "${modules[1]}" ]; then
   printf '  %s\n' "${modules[@]}" >&2
 fi
 
-finish "go-security-setup and go-security-audit state the shared ${blocks[*]} rules and module discovery identically"
+finish "appsec-setup and appsec-audit state the shared ${blocks[*]} rules and module discovery identically"

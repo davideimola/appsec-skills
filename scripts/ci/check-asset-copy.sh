@@ -9,7 +9,7 @@ set -euo pipefail
 pairs=(
   "$workflow_asset:.github/workflows/security.yml"
   "$dependabot_asset:.github/dependabot.yml"
-  "$answers_asset:docs/agents/go-security.md"
+  "$answers_asset:docs/agents/appsec.md"
   "$policy_asset:SECURITY.md"
 )
 

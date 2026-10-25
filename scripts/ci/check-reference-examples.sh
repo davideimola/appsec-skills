@@ -16,8 +16,8 @@ set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
 required=(
-  skills/go-security-audit/references/http-limits.md
-  skills/verify-with-fuzz/references/deny-by-default-authz.md
+  skills/appsec-audit/references/http-limits.md
+  skills/appsec-prove/references/deny-by-default-authz.md
 )
 
 for ref in "${required[@]}"; do

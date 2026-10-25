@@ -1,6 +1,6 @@
 ---
-name: verify-with-fuzz
-description: Verifies a security hypothesis about Go code by writing a fuzz property and named test cases that fail on today's code and stay as regression tests. Use when the user suspects an authorization or trust bug in Go code (who may do what, which input is trusted) and wants it proven with a failing test, or when go-security-audit needs evidence for a logic finding.
+name: appsec-prove
+description: Verifies a security hypothesis about Go code by writing a fuzz property and named test cases that fail on today's code and stay as regression tests. Use when the user suspects an authorization or trust bug in Go code (who may do what, which input is trusted) and wants it proven with a failing test, or when appsec-audit needs evidence for a logic finding.
 license: MIT
 metadata:
   author: davideimola
@@ -57,7 +57,7 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
 5. **Report** in the chat, in this shape:
 
    ```
-   ## verify-with-fuzz: <hypothesis>
+   ## appsec-prove: <hypothesis>
 
    Result: Reproduced | Not reproduced
    Check: <func> (<file:line>), rule: <the explicit ways in>
@@ -74,4 +74,4 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
 
 ## After a fix
 
-When a fix to the check lands, by the user or by `go-security-audit` after the user confirms it, run the step 4 commands unchanged, then `go test ./<pkg>`. The fix is verified when all of them pass. When one fails, report the input that is still granted: the fix is incomplete. The tests stay either way.
+When a fix to the check lands, by the user or by `appsec-audit` after the user confirms it, run the step 4 commands unchanged, then `go test ./<pkg>`. The fix is verified when all of them pass. When one fails, report the input that is still granted: the fix is incomplete. The tests stay either way.

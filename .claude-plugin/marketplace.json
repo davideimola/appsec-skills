@@ -1,21 +1,21 @@
 {
-  "name": "go-security-skills",
-  "description": "Agent Skills for Go security whose output is tested",
+  "name": "appsec-skills",
+  "description": "Application security Agent Skills whose output is tested",
   "owner": {
     "name": "Davide Imola"
   },
   "plugins": [
     {
-      "name": "go-security-skills",
+      "name": "appsec-skills",
       "version": "1.0.0",
-      "description": "Go security skills: security CI setup, audit and fuzz-verified fixes",
+      "description": "Security CI setup, audit and proven fixes; Go today, one pack per ecosystem",
       "source": "./",
       "strict": false,
       "license": "MIT",
       "skills": [
-        "./skills/go-security-audit",
-        "./skills/go-security-setup",
-        "./skills/verify-with-fuzz"
+        "./skills/appsec-audit",
+        "./skills/appsec-setup",
+        "./skills/appsec-prove"
       ]
     }
   ]

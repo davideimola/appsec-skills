@@ -15,16 +15,17 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
 1. **Pin the hypothesis to a check.**
    - Find the function that makes the decision the hypothesis is about, with its package and `file:line`.
    - Write down the rule it must enforce as its explicit ways in (for example: a super admin, or an admin of that same organization). Take the rule from the function's doc comment, the user or the hypothesis. When they disagree or none states it, ask the user.
+   - Write down the rule's **deny-all conditions** separately: anything the rule says denies everyone, whatever the way in (for example: a target organization that could not be resolved is denied even to a super admin). Add each one to **every** way in, not only to the way in it reads closest to. A deny-all condition left out of one way in makes the tests accept an incomplete fix.
    - Restate the hypothesis as a named case: a literal input and the answer the rule requires, deny (for example: an org admin of `acme` on `globex` must be denied).
    - Baseline: record the output of `git status --porcelain`.
 
    For a hypothesis about who may do what, read [references/deny-by-default-authz.md](references/deny-by-default-authz.md) now: it is the shape to copy, proven in CI to fail on a fail-open check and pass on the fixed one.
 
-   Done when you have the function, its `file:line`, the rule as a list of explicit ways in, the named case and the baseline.
+   Done when you have the function, its `file:line`, the rule as a list of explicit ways in each carrying every deny-all condition, the named case and the baseline.
 
-2. **Write the named cases.** In the package's `_test.go` file (the existing one when there is one), add `Test<Func>Denies`: a table of literal inputs the rule denies. It holds the named case and its neighbours: the target that could not be resolved (empty ID, zero value), the missing role, another tenant. When no test checks the explicit ways in, add `Test<Func>Allows` with one literal case per way in. Every expected answer comes from the rule, never from running the code.
+2. **Write the named cases.** In the package's `_test.go` file (the existing one when there is one), add `Test<Func>Denies`: a table of literal inputs the rule denies. It holds the named case and its neighbours: each identifier of the target and of the caller that could be unresolved (empty ID, zero value), one row each, since two unresolved IDs compare equal; the missing role; another tenant; and, for each deny-all condition, a row that meets each way in otherwise (for example: a super admin, and an admin of the same organization, on an unresolved organization). When no test checks the explicit ways in, add `Test<Func>Allows` with one literal case per way in. Every expected answer comes from the rule, never from running the code.
 
-   Done when `Test<Func>Denies` has the named case, a row with the target unresolved, and, for each way in from step 1, a row that misses exactly one of its conditions (the role, the same tenant); each way in has a case in `Test<Func>Allows` or an existing test; and `go vet ./<pkg>` passes.
+   Done when `Test<Func>Denies` has the named case, a row per unresolvable identifier of the target and the caller, a row per deny-all condition and way in, and, for each way in from step 1, a row that misses exactly one of its conditions (the role, the same tenant); each way in has a case in `Test<Func>Allows` or an existing test; and `go vet ./<pkg>` passes.
 
 3. **Write the property.** In `<file>_fuzz_test.go` next to the check, add `Fuzz<Func>`:
    - Its arguments are the decision's inputs as primitives (`bool`, `string`, `[]byte`, integer and float types), and it builds the function's arguments from them, as the reference builds `User`.
@@ -32,7 +33,7 @@ The test checks who must be denied, not only who gets in. A fail-open bug passes
    - It fails only when the check grants what is not allowed: `t.Fatalf("granted: %+v on %q", ...)` with the inputs.
    - Its one seed (`f.Add`) is a case the rule allows. The fuzzer finds the denied cases; the named cases from step 2 already hold the case you know.
 
-   Done when `Fuzz<Func>`'s fuzz arguments are all primitives, `allowed` is step 1's ways in and calls nothing from the package under test, its only failure is the `granted:` `t.Fatalf` on a grant `allowed` rejects, its one `f.Add` seed is a case `allowed` accepts, and `go vet ./<pkg>` passes.
+   Done when `Fuzz<Func>`'s fuzz arguments are all primitives, `allowed` is step 1's ways in, each carrying every deny-all condition, and calls nothing from the package under test, its only failure is the `granted:` `t.Fatalf` on a grant `allowed` rejects, its one `f.Add` seed is a case `allowed` accepts, and `go vet ./<pkg>` passes.
 
 4. **Run it.** From the module directory, run:
 

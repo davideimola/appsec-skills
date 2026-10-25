@@ -4,7 +4,7 @@ Application security Agent Skills that set up security CI, audit your code and p
 
 The skills are one per purpose; what each ecosystem adds is a **pack**, and a pack ships only once its own fixture runs in CI. **Go** is the pack today, from the talk "Securing Go for Production" (GoLab 2026); **TypeScript** is next.
 
-Formerly `go-security-skills`: the old URL redirects here. Since 2.0.0 the skills are `appsec-setup`, `appsec-audit` and `appsec-prove` (formerly `go-security-setup`, `go-security-audit` and `verify-with-fuzz`), and the setup answers live in `docs/agents/appsec.md`; a `docs/agents/go-security.md` from an earlier version is still read, and the setup replaces it on its next run.
+Formerly `go-security-skills`: the old URL redirects here. The skills are now `appsec-setup`, `appsec-audit` and `appsec-prove` (formerly `go-security-setup`, `go-security-audit` and `verify-with-fuzz`), and the setup answers live in `docs/agents/appsec.md`; a `docs/agents/go-security.md` from an earlier version is still read, and the setup replaces it on its next run.
 
 The skills use the open [Agent Skills](https://agentskills.io) format, so they work with Claude Code, Codex, Copilot, Cursor, Gemini CLI and any other agent that reads `SKILL.md`. You don't call them by name: ask your agent in plain words and it picks the right one.
 

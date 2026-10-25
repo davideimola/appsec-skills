@@ -56,7 +56,7 @@ A source is unavailable when the shell has no such binary, or your agent has no 
 1. **Read the target repo.**
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
    - Baseline: record the output of `git status --porcelain`.
-   - Setup answers: read `docs/agents/appsec.md` if it exists, or else `docs/agents/go-security.md`, the name versions before 2.0.0 wrote, and note each answer from the [Setup answers](#setup-answers) table it gives, and each scanner's source from [Scanner sources](#scanner-sources).
+   - Setup answers: read `docs/agents/appsec.md` if it exists, or else `docs/agents/go-security.md`, the name the skills used as `go-security-skills`, and note each answer from the [Setup answers](#setup-answers) table it gives, and each scanner's source from [Scanner sources](#scanner-sources).
 
    Done when you have at least one module directory, the baseline, the answers that leave something out (or none), and a source for each scanner. With no `go.mod`, stop and tell the user this skill is for Go repos.
 

@@ -17,7 +17,7 @@ The rename happens before the talk (3 November 2026), not after: changing names 
 ## Consequences
 
 - A pack exists only with its own fixture and CI (ADR 0002), so packs are added one at a time, and a skill's description names only the ecosystems that have a pack.
-- The answers file is `docs/agents/appsec.md`. The setup and the audit still read `docs/agents/go-security.md`, the name versions before 2.0.0 wrote, and the setup replaces it on its next run.
-- The rename is a breaking change for installed skills, released as 2.0.0.
+- The answers file is `docs/agents/appsec.md`. The setup and the audit still read `docs/agents/go-security.md`, the name the skills used as `go-security-skills`, and the setup replaces it on its next run.
+- Installed skills change name: anyone who installed `go-security-skills` re-installs. No release marks it (ADR 0013).
 - `go-security.yml`, the setup's fallback workflow name, stays: the workflow it installs is the Go pack's.
 - ADRs before this one keep the old names: they record decisions as they were made.

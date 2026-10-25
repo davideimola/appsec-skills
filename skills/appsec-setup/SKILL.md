@@ -123,7 +123,7 @@ The file belongs to this skill: it never goes into `AGENTS.md` or `CLAUDE.md`, a
 1. **Read the target repo.**
    - Default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix. If neither answers, ask the user.
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
-   - Saved answers: read `docs/agents/appsec.md` if it exists, or else `docs/agents/go-security.md`, the name versions before 2.0.0 wrote.
+   - Saved answers: read `docs/agents/appsec.md` if it exists, or else `docs/agents/go-security.md`, the name the skills used as `go-security-skills`.
    - Install path: the workflow the saved answers name under `Security workflow`, when that file exists: it is the one this skill installed, and a re-run updates it. Otherwise `.github/workflows/security.yml`, or `.github/workflows/go-security.yml` if that file already exists. If both exist, stop and tell the user: you never edit an existing workflow.
    - Existing govulncheck: search every file in `.github/workflows/` for `govulncheck`, except the install path on a re-run. For each run, note its `file:line`, its triggers, and the module directories it runs in (its `working-directory`, `work-dir` or matrix; the root when none is set).
    - Toolchain: for each module, its `go` and `toolchain` lines and its status, as in [Toolchain](#toolchain).

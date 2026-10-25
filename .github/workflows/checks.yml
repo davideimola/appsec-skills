@@ -112,3 +112,19 @@ jobs:
 
       - name: Skill reference examples quote the proven fixture code
         run: scripts/ci/check-reference-examples.sh
+
+  ts-property:
+    name: Property catches fail-open authz (TypeScript)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: testdata/fixture-ts/.node-version
+          package-manager-cache: false
+
+      - name: Property fails on the vulnerable authz, keeps its counterexample, and passes on the fixed one
+        run: scripts/ci/check-ts-property-catches-vulnerable.sh

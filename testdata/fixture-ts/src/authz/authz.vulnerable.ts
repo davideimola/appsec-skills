@@ -1,20 +1,20 @@
-import type { User } from "./user.js";
+import type { Caller, Project } from "./project.js";
 
 /**
  * The vulnerable version of the check in authz.ts, kept so CI can prove the
  * property catches it. vitest swaps it in for authz.ts only when run with
  * VULNERABLE=1 (see vitest.config.ts); nothing imports it directly.
  *
- * It has the two bugs the deny-by-default version fixes: it fails open when
- * the target organization could not be resolved (orgId === ""), and it checks
- * membership of the organization where the admin role is required.
+ * It has the two bugs the deny-by-default version fixes: on a project with no
+ * owner yet, the owner check matches any caller with no id ("" === ""), and it
+ * lets any non-viewer of the organization in where the admin role is required.
  */
-export function canManageOrg(u: User, orgId: string): boolean {
-  if (orgId === "") {
+export function canEditProject(c: Caller, p: Project): boolean {
+  if (p.orgId === "") {
+    return false;
+  }
+  if (c.role !== "viewer" && c.orgId === p.orgId) {
     return true;
   }
-  if (u.isSuperAdmin) {
-    return true;
-  }
-  return u.orgId === orgId;
+  return c.id === p.ownerId;
 }

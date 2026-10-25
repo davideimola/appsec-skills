@@ -50,6 +50,17 @@ copy_fixture() {
   cd "$work"
 }
 
+# The lines of the sh block under a reference's "## Commands" heading.
+reference_commands() {
+  awk '
+    /^## Commands$/ { section = 1; next }
+    section && /^## / { exit }
+    section && /^```sh$/ { block = 1; next }
+    block && /^```$/ { exit }
+    block { print }
+  ' "$1"
+}
+
 count_line() {
   awk -v want="$2" '$0 == want { n++ } END { print n + 0 }' "$1"
 }
@@ -64,6 +75,8 @@ fixture_ts=testdata/fixture-ts
 setup_skill=skills/appsec-setup/SKILL.md
 audit_skill=skills/appsec-audit/SKILL.md
 verify_skill=skills/appsec-prove/SKILL.md
+prove_go_ref=skills/appsec-prove/references/go.md
+prove_ts_ref=skills/appsec-prove/references/typescript.md
 workflow_asset=skills/appsec-setup/assets/security.yml
 dependabot_asset=skills/appsec-setup/assets/dependabot.yml
 answers_asset=skills/appsec-setup/assets/appsec.md

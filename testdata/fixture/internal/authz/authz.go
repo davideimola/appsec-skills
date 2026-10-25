@@ -2,17 +2,18 @@
 
 package authz
 
-// CanManageOrg reports whether u may use admin-only features of orgID.
+// CanEditProject reports whether c may edit p.
 //
-// Two explicit ways in: a super admin, or an admin of that same
-// organization. Everything else is denied, including a request whose
-// target organization could not be resolved (orgID == "").
-func CanManageOrg(u User, orgID string) bool {
-	if orgID == "" {
+// Two explicit ways in: the project's owner, or an admin of the project's
+// organization. A project with no organization (OrgID == "") is denied to
+// everyone, and a project with no owner yet (OwnerID == "") has no owner way
+// in. Everything else is denied.
+func CanEditProject(c Caller, p Project) bool {
+	if p.OrgID == "" {
 		return false
 	}
-	if u.IsSuperAdmin {
+	if c.Role == RoleAdmin && c.OrgID == p.OrgID {
 		return true
 	}
-	return u.IsOrgAdmin && u.OrgID == orgID
+	return p.OwnerID != "" && c.ID == p.OwnerID
 }

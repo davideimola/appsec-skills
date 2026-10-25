@@ -2,10 +2,10 @@
 # Proves the loop appsec-audit runs for a logic finding, on the fixture:
 # failing test, then fix, then the same test passing, and the test kept.
 #
-# It runs the commands appsec-prove's step 4 tells the agent to run, as the
-# skill writes them, with <Func> and <pkg> filled in for the fixture's
-# CanManageOrg. "Today's code" is the vulnerable build (`-tags vulnerable`);
-# "the confirmed fix" is the default build. It requires:
+# It runs the commands appsec-prove's Go reference tells the agent to run in
+# step 4, as the reference writes them, with <Func> and <pkg> filled in for
+# the fixture's CanEditProject. "Today's code" is the vulnerable build
+# (`-tags vulnerable`); "the confirmed fix" is the default build. It requires:
 #   - the audit to reach appsec-prove for a logic finding and verify the
 #     fix with appsec-prove's "After a fix" section;
 #   - before the fix, the named cases and the property fail, and the fuzzer
@@ -17,18 +17,19 @@
 #
 # Everything runs on a temporary copy of the fixture.
 #
-# It matches the skills' prose on purpose (step 4's heading and sh block, "After
-# a fix"): rewording those lines means updating this check in the same change.
+# It matches the skills' prose on purpose (the Go reference's "## Commands" sh
+# block, "After a fix"): rewording those lines means updating this check in the
+# same change.
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
 audit=$audit_skill
 verify=$verify_skill
-func=CanManageOrg
+func=CanEditProject
 pkg=internal/authz
 pass_budget=${FUZZ_PASS_BUDGET:-}
 
-for f in "$audit" "$verify" "$fixture/go.mod"; do
+for f in "$audit" "$verify" "$prove_go_ref" "$fixture/go.mod"; do
   [ -f "$f" ] || die "missing $f"
 done
 
@@ -36,17 +37,11 @@ grep -qF 'appsec-prove' "$audit" || die "$audit: never reaches appsec-prove"
 grep -qF 'After a fix' "$audit" || die "$audit: does not verify a logic fix with appsec-prove's After a fix section"
 grep -q '^## After a fix$' "$verify" || die "$verify: no '## After a fix' section"
 
-# The go test lines of the sh block in appsec-prove's step 4.
-commands=$(awk '
-  /^[0-9]+\. \*\*Run it\.\*\*/ { step = 1; next }
-  step && /^[0-9]+\. \*\*/ { exit }
-  step && /^ *```sh$/ { block = 1; next }
-  block && /^ *```$/ { exit }
-  block { sub(/^ +/, ""); print }
-' "$verify")
+# The go test lines of the sh block in appsec-prove's Go reference.
+commands=$(reference_commands "$prove_go_ref")
 [ "$(grep -c '^go test ' <<<"$commands")" -eq 2 ] \
-  || die "$verify: step 4 does not hold exactly two go test commands"
-grep -q -- '-fuzz ' <<<"$commands" || die "$verify: step 4 has no fuzz command"
+  || die "$prove_go_ref: Commands does not hold exactly two go test commands"
+grep -q -- '-fuzz ' <<<"$commands" || die "$prove_go_ref: Commands has no fuzz command"
 commands=$(sed -e "s|<Func>|$func|g" -e "s|<pkg>|$pkg|g" <<<"$commands")
 if [ -n "$pass_budget" ]; then
   commands=$(sed -E "s/-fuzztime [^ ]+/-fuzztime $pass_budget/" <<<"$commands")

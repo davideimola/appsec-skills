@@ -1,18 +1,19 @@
-import type { User } from "./user.js";
+import type { Caller, Project } from "./project.js";
 
 /**
- * Reports whether u may use admin-only features of orgId.
+ * Reports whether c may edit p.
  *
- * Two explicit ways in: a super admin, or an admin of that same
- * organization. Everything else is denied, including a request whose
- * target organization could not be resolved (orgId === "").
+ * Two explicit ways in: the project's owner, or an admin of the project's
+ * organization. A project with no organization (orgId === "") is denied to
+ * everyone, and a project with no owner yet (ownerId === "") has no owner way
+ * in. Everything else is denied.
  */
-export function canManageOrg(u: User, orgId: string): boolean {
-  if (orgId === "") {
+export function canEditProject(c: Caller, p: Project): boolean {
+  if (p.orgId === "") {
     return false;
   }
-  if (u.isSuperAdmin) {
+  if (c.role === "admin" && c.orgId === p.orgId) {
     return true;
   }
-  return u.isOrgAdmin && u.orgId === orgId;
+  return p.ownerId !== "" && c.id === p.ownerId;
 }

@@ -73,11 +73,14 @@ actionlint() { go run "github.com/rhysd/actionlint/cmd/actionlint@$ACTIONLINT_VE
 fixture=testdata/fixture
 fixture_ts=testdata/fixture-ts
 setup_skill=skills/appsec-setup/SKILL.md
+ci_skill=skills/appsec-ci/SKILL.md
 audit_skill=skills/appsec-audit/SKILL.md
 verify_skill=skills/appsec-prove/SKILL.md
 prove_go_ref=skills/appsec-prove/references/go.md
 prove_ts_ref=skills/appsec-prove/references/typescript.md
-workflow_asset=skills/appsec-setup/assets/security.yml
-dependabot_asset=skills/appsec-setup/assets/dependabot.yml
+workflow_asset=skills/appsec-ci/assets/security.yml
+dependabot_asset=skills/appsec-ci/assets/dependabot.yml
 answers_asset=skills/appsec-setup/assets/appsec.md
-policy_asset=skills/appsec-setup/assets/SECURITY.md
+ci_answers_asset=skills/appsec-ci/assets/appsec-ci.md
+agents_block_asset=skills/appsec-setup/assets/agents-block.md
+policy_asset=skills/appsec-ci/assets/SECURITY.md

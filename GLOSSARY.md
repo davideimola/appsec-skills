@@ -21,7 +21,10 @@ The only lines of a canonical asset a skill may change in the target repo, liste
 _Avoid_: placeholders, variables, parameters
 
 **Setup answers**:
-What the target repo's owner chose when `appsec-setup` asked, saved in the target repo's **answers file**, `docs/agents/appsec.md`. The audit leaves out what the answers opt out of.
+What the target repo's owner chose when `appsec-setup` asked (the ecosystems found, where each scanner comes from), saved in `docs/agents/appsec.md`. Every appsec skill reads them; `appsec-setup` runs first (ADR 0015).
+
+**CI answers**:
+What the owner chose when `appsec-ci` asked (what to install, schedule, fuzzing, failure policy, reporting channel), saved in `docs/agents/appsec-ci.md`. The audit leaves out what they opt out of.
 _Avoid_: config, settings, preferences
 
 **Scanner source**:

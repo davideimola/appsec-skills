@@ -25,9 +25,9 @@ A finding is one problem, reported with these four parts and nothing left blank:
 
 Only what the checks below show becomes a finding. A vulnerability that `govulncheck` finds in a package or module your code does not call is **context**: count it, and leave it out of the findings. A gosec issue is a **signal**: it becomes a finding only once the code at its `file:line` confirms it (step 5).
 
-## Setup answers
+## CI answers
 
-`appsec-setup` records what the owner chose to install in `docs/agents/appsec.md`. When the target repo has that file, each answer below is the owner's decision: leave out what the table says, from the findings and from every suggested fix, and name the answer in the report's `Opted out` line. A `yes` or `on` answer, or no answers file, leaves out nothing.
+`appsec-ci` records what the owner chose to install in `docs/agents/appsec-ci.md`. When the target repo has that file, each answer below is the owner's decision: leave out what the table says, from the findings and from every suggested fix, and name the answer in the report's `Opted out` line. A `yes` or `on` answer, or no answers file, leaves out nothing.
 
 | Answer | Leave out |
 |---|---|
@@ -39,7 +39,7 @@ Only what the checks below show becomes a finding. A vulnerability that `govulnc
 
 ## Scanner sources
 
-Steps 4 and 5 run `govulncheck` and gosec from the source the answers file names under `## Scanner sources`, on its `govulncheck:` and `gosec:` lines: the owner's choice of where each scanner runs, never of which scanner it is. With no answers file, or no line for a scanner, its source is an ephemeral run.
+Steps 4 and 5 run `govulncheck` and gosec from the source `appsec-setup` saved in `docs/agents/appsec.md` under `## Scanner sources`, on its `govulncheck:` and `gosec:` lines: the owner's choice of where each scanner runs, never of which scanner it is. With no answers file, or no line for a scanner, its source is an ephemeral run.
 
 <!-- shared: scanner-sources -->
 - **Ephemeral run**, the default: `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...` and `go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 -no-fail ./...`, in the module directory. The Go checksum database verifies each version, and nothing is installed. Run exactly these commands, even when the repo has the scanner installed or declares its own tool, so every run uses the same checker.
@@ -56,7 +56,9 @@ A source is unavailable when the shell has no such binary, or your agent has no 
 1. **Read the target repo.**
    - Go modules: `git ls-files '*go.mod'`, skipping any path with a `vendor/` or `testdata/` segment. Each module directory is the file's directory, `.` for a root `go.mod`.
    - Baseline: record the output of `git status --porcelain`.
-   - Setup answers: read `docs/agents/appsec.md` if it exists, or else `docs/agents/go-security.md`, the name the skills used as `go-security-skills`, and note each answer from the [Setup answers](#setup-answers) table it gives, and each scanner's source from [Scanner sources](#scanner-sources).
+   - Setup: read `docs/agents/appsec.md` and note each scanner's source from [Scanner sources](#scanner-sources). When it does not exist and neither does `docs/agents/go-security.md`, the name the skills used as `go-security-skills`, ask once: "This repo has no appsec-skills setup. Run `appsec-setup` first? yes or no." With yes, follow `appsec-setup` to its end, then continue here. With no, or when `appsec-setup` is not installed, continue: each scanner runs as an ephemeral run.
+   - CI answers: read `docs/agents/appsec-ci.md` if it exists, and note each answer from the [CI answers](#ci-answers) table it gives.
+   - Legacy answers: when `docs/agents/go-security.md` exists, read the setup and CI answers above from it wherever `docs/agents/appsec.md` or `docs/agents/appsec-ci.md` does not exist.
 
    Done when you have at least one module directory, the baseline, the answers that leave something out (or none), and a source for each scanner. With no `go.mod`, stop and tell the user this skill is for Go repos.
 
@@ -122,7 +124,7 @@ A source is unavailable when the shell has no such binary, or your agent has no 
 
    Context: govulncheck also knows <unreachable count> vulnerabilities in packages and modules this repo requires that its code does not call. They are not findings.
    Dismissed gosec signals: <n>, each as <rule> <file:line>: <reason from the code>
-   Opted out: <each setup answer that left something out, and what it left out>, or none
+   Opted out: <each CI answer that left something out, and what it left out>, or none
    Not run: <each check that did not run, and why>
    ```
 

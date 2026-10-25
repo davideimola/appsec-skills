@@ -1,17 +1,26 @@
 #!/usr/bin/env bash
-# Fails if a rule that appsec-setup and appsec-audit both state has
-# drifted between them. Each skill installs on its own, so each keeps its own
-# copy, and this check keeps the copies identical:
+# Fails if a rule that several skills state has drifted between them. Each
+# skill installs on its own, so each keeps its own copy, and this check keeps
+# the copies identical:
 #   - each block between `<!-- shared: <name> -->` and `<!-- /shared: <name> -->`
-#     appears once in both skills, the same line for line once the marker's
-#     indentation is removed (the audit nests it in a numbered step);
-#   - the module discovery bullet (`- Go modules: ...`) is the same line in both.
-# Changing a shared rule means changing it in both skills in the same PR.
+#     appears once in every skill that states it, the same line for line once
+#     the marker's indentation is removed (the audit nests it in a numbered
+#     step): toolchain in appsec-ci and appsec-audit, scanner-sources in
+#     appsec-setup, appsec-ci and appsec-audit;
+#   - the module discovery bullet (`- Go modules: ...`) is the same line in
+#     appsec-setup, appsec-ci and appsec-audit.
+# Changing a shared rule means changing it in every skill in the same PR.
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
-skills=("$setup_skill" "$audit_skill")
-blocks=(toolchain scanner-sources)
+# holders NAME: the skills that state the shared block NAME.
+holders() {
+  case $1 in
+    toolchain) echo "$ci_skill $audit_skill" ;;
+    scanner-sources) echo "$setup_skill $ci_skill $audit_skill" ;;
+  esac
+}
+module_holders=("$setup_skill" "$ci_skill" "$audit_skill")
 
 mkwork
 
@@ -27,32 +36,35 @@ extract() {
   ' "$1"
 }
 
-for name in "${blocks[@]}"; do
-  for s in "${skills[@]}"; do
+for name in toolchain scanner-sources; do
+  first=
+  for s in $(holders "$name"); do
     out="$work/$(basename "$(dirname "$s")").$name"
-    extract "$s" "$name" >"$out" || fail "$s: expected one closed '<!-- shared: $name -->' block"
-    [ -s "$out" ] || fail "$s: the shared $name block is empty"
+    extract "$s" "$name" >"$out" || { fail "$s: expected one closed '<!-- shared: $name -->' block"; continue; }
+    [ -s "$out" ] || { fail "$s: the shared $name block is empty"; continue; }
+    if [ -z "$first" ]; then
+      first=$s
+    elif ! cmp -s "$work/$(basename "$(dirname "$first")").$name" "$out"; then
+      fail "the shared $name block differs between $first and $s:"
+      diff -u "$work/$(basename "$(dirname "$first")").$name" "$out" >&2 || true
+    fi
   done
-  a="$work/$(basename "$(dirname "${skills[0]}")").$name"
-  b="$work/$(basename "$(dirname "${skills[1]}")").$name"
-  if [ -s "$a" ] && [ -s "$b" ] && ! cmp -s "$a" "$b"; then
-    fail "the shared $name block differs between ${skills[0]} and ${skills[1]}:"
-    diff -u "$a" "$b" >&2 || true
-  fi
 done
 
-modules=()
-for s in "${skills[@]}"; do
+first=
+for s in "${module_holders[@]}"; do
   n=$(grep -cE '^ *- Go modules: ' "$s" || true)
   if [ "$n" -ne 1 ]; then
     fail "$s: expected one '- Go modules:' bullet, found $n"
     continue
   fi
-  modules+=("$(grep -E '^ *- Go modules: ' "$s" | sed -E 's/^ +//')")
+  line=$(grep -E '^ *- Go modules: ' "$s" | sed -E 's/^ +//')
+  if [ -z "$first" ]; then
+    first=$line
+  elif [ "$line" != "$first" ]; then
+    fail "the '- Go modules:' bullet differs in $s:"
+    printf '  %s\n  %s\n' "$first" "$line" >&2
+  fi
 done
-if [ ${#modules[@]} -eq 2 ] && [ "${modules[0]}" != "${modules[1]}" ]; then
-  fail "the '- Go modules:' bullet differs between ${skills[0]} and ${skills[1]}:"
-  printf '  %s\n' "${modules[@]}" >&2
-fi
 
-finish "appsec-setup and appsec-audit state the shared ${blocks[*]} rules and module discovery identically"
+finish "the shared toolchain and scanner-sources rules and module discovery are identical in every skill that states them"

@@ -1,30 +1,15 @@
-# Go security setup answers
+# appsec-skills setup answers
 
-`appsec-setup` wrote this file from the owner's answers and offers them as the defaults the next time it runs. `appsec-audit` reads it: it does not report a piece marked `no`, and runs each scanner from the source named under Scanner sources. To change an answer, run the setup again: it applies the change to the installed files and updates this file.
+`appsec-setup` wrote this file from the owner's answers and offers them as the defaults the next time it runs. Every appsec skill reads it before it starts. To change an answer, run `appsec-setup` again: it updates this file.
 
-## What to install
+## Ecosystems
 
-- Security workflow: yes, `.github/workflows/security.yml`
-- Dependabot: yes, `.github/dependabot.yml`
-- Toolchain check: yes
-- Security policy: yes, `SECURITY.md`
+- Go: `testdata/fixture`
+- TypeScript: `testdata/fixture-ts`
 
-## Schedule
+## CI platform
 
-- Weekly run: Monday 06:00 UTC, cron `0 6 * * 1`
-
-## Weekly fuzzing
-
-- Fuzzing: on
-- Fuzz time per target: `1m`
-
-## Failure policy
-
-- Reachable vulnerability: fail
-
-## Reporting channel
-
-- Channel: GitHub private vulnerability reporting
+- CI platform: GitHub Actions
 
 ## Scanner sources
 

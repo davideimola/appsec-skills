@@ -12,8 +12,9 @@
       "strict": false,
       "license": "MIT",
       "skills": [
-        "./skills/appsec-audit",
         "./skills/appsec-setup",
+        "./skills/appsec-ci",
+        "./skills/appsec-audit",
         "./skills/appsec-prove"
       ]
     }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Proves the appsec-setup security policy asset against the answers:
+# Proves the appsec-ci security policy asset against the answers:
 #   1. the asset's reporting line is the default channel (GitHub private
 #      vulnerability reporting) for this repo, exactly once;
 #   2. SKILL.md names every reporting line the skill may write instead, each
@@ -12,8 +12,8 @@ set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
 asset=$policy_asset
-skill=$setup_skill
-answers=$answers_asset
+skill=$ci_skill
+answers=$ci_answers_asset
 
 [ -f "$asset" ] || die "missing $asset"
 

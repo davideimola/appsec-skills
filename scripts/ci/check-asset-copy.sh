@@ -10,6 +10,7 @@ pairs=(
   "$workflow_asset:.github/workflows/security.yml"
   "$dependabot_asset:.github/dependabot.yml"
   "$answers_asset:docs/agents/appsec.md"
+  "$ci_answers_asset:docs/agents/appsec-ci.md"
   "$policy_asset:SECURITY.md"
 )
 

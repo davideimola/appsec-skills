@@ -27,10 +27,13 @@ jobs:
       - name: Argus appears only in the README's MCP server section and once in the audit
         run: scripts/ci/check-argus-mentions.sh
 
-      - name: The audit leaves out every piece the setup answers can opt out of, and reads every scanner source
+      - name: The audit leaves out every piece the CI answers can opt out of, and reads every scanner source
         run: scripts/ci/check-audit-reads-answers.sh
 
-      - name: The setup and the audit state the toolchain and scanner source rules and module discovery identically
+      - name: Setup answers have a row per key and default to ephemeral runs, and AGENTS.md holds the agents block
+        run: scripts/ci/check-setup-answers.sh
+
+      - name: Setup, CI and audit state the shared toolchain and scanner source rules and module discovery identically
         run: scripts/ci/check-shared-rules.sh
 
       - name: Agent Skills validator
@@ -56,7 +59,7 @@ jobs:
       - name: Every uses is pinned to a full commit SHA
         run: scripts/ci/check-pins.sh
 
-      - name: This repo's security workflow, Dependabot config, setup answers and security policy are byte-identical to the assets
+      - name: This repo's security workflow, Dependabot config, setup and CI answers and security policy are byte-identical to the assets
         run: scripts/ci/check-asset-copy.sh
 
       - name: Weekly schedule, fuzz gated on it, fuzz step green on the fixture
@@ -68,8 +71,8 @@ jobs:
       - name: The audit runs the gosec and govulncheck versions the fixture tracks as direct tool dependencies
         run: scripts/ci/check-tool-versions.sh
 
-      - name: Setup answers match the asset's defaults, and every other answer lints clean
-        run: scripts/ci/check-setup-answers.sh
+      - name: CI answers match the asset's defaults, and every other answer lints clean
+        run: scripts/ci/check-ci-answers.sh
 
       - name: Security policy asset reports through the default channel, and the setup names every other channel's line
         run: scripts/ci/check-security-policy.sh

@@ -1,30 +1,33 @@
 import fc from "fast-check";
 import { test } from "vitest";
-import { canManageOrg } from "./authz.js";
-import type { User } from "./user.js";
+import { canEditProject } from "./authz.js";
+import type { Caller, Project, Role } from "./project.js";
 
 // The deny-by-default property on inputs nobody thought of. The table tests
 // cover the cases we know; this covers the rest.
 //
 // fast-check generates at random, unlike Go's coverage-guided fuzzer, so two
-// arbitrary strings almost never collide. The rule depends on whether the
-// user's org is the target org, so that relation is generated directly:
-// sameOrg makes the target the user's own org.
-test("canManageOrg grants only what the rule allows", () => {
+// arbitrary strings almost never collide. The rule depends on two relations,
+// the caller's org against the project's and the caller's id against the
+// owner's, so each is generated directly: sameOrg and isOwner make them equal.
+test("canEditProject grants only what the rule allows", () => {
   fc.assert(
     fc.property(
-      fc.boolean(),
-      fc.boolean(),
+      fc.string(),
+      fc.string(),
+      fc.constantFrom<Role>("viewer", "member", "admin"),
       fc.string(),
       fc.string(),
       fc.boolean(),
-      (isSuperAdmin, isOrgAdmin, userOrg, otherOrg, sameOrg) => {
-        const u: User = { isSuperAdmin, isOrgAdmin, orgId: userOrg };
-        const org = sameOrg ? userOrg : otherOrg;
-        const allowed = org !== "" && (isSuperAdmin || (isOrgAdmin && userOrg === org));
+      fc.boolean(),
+      (callerId, callerOrg, role, projectOrg, ownerId, sameOrg, isOwner) => {
+        const c: Caller = { id: isOwner ? ownerId : callerId, orgId: sameOrg ? projectOrg : callerOrg, role };
+        const p: Project = { id: "p", orgId: projectOrg, ownerId };
+        const allowed =
+          p.orgId !== "" && ((c.role === "admin" && c.orgId === p.orgId) || (p.ownerId !== "" && c.id === p.ownerId));
 
-        if (canManageOrg(u, org) && !allowed) {
-          throw new Error(`granted: ${JSON.stringify(u)} on ${JSON.stringify(org)}`);
+        if (canEditProject(c, p) && !allowed) {
+          throw new Error(`granted: ${JSON.stringify(c)} on ${JSON.stringify(p)}`);
         }
       },
     ),

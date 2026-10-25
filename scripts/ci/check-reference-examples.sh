@@ -9,15 +9,18 @@
 #   ...the file, byte for byte...
 #   ```
 #
-# Each quoted block must equal testdata/fixture/<path>, so the example an agent
-# copies is the one check-fuzz-catches-vulnerable.sh runs. Every reference file
+# The fence names the fixture: a ```go block must equal testdata/fixture/<path>
+# and a ```ts block testdata/fixture-ts/<path>, so the example an agent copies
+# is the one check-fuzz-catches-vulnerable.sh or
+# check-ts-property-catches-vulnerable.sh runs. Every reference file
 # listed in `required` must quote at least one fixture file.
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
 required=(
   skills/appsec-audit/references/http-limits.md
-  skills/appsec-prove/references/deny-by-default-authz.md
+  skills/appsec-prove/references/go.md
+  skills/appsec-prove/references/typescript.md
 )
 
 for ref in "${required[@]}"; do
@@ -37,22 +40,25 @@ for ref in skills/*/references/*.md; do
     match($0, /^<!-- fixture: [^ ]+ -->$/) {
       path = substr($0, 15, length($0) - 18)
       getline fence
-      if (fence != "```go") { print "BADFENCE " path; next }
+      if (fence == "```go") lang = "go"
+      else if (fence == "```ts") lang = "ts"
+      else { print "BADFENCE - " path; next }
       n++; file = out "/" n; printf "" > file
-      print n " " path
+      print n " " lang " " path
       while ((getline line) > 0 && line != "```") print line >> file
       close(file)
     }
   ' "$ref" >"$out/index"
 
   quoted=0
-  while read -r n path; do
+  while read -r n lang path; do
     if [ "$n" = BADFENCE ]; then
-      fail "$ref: the marker for $path is not followed by a \`\`\`go block"
+      fail "$ref: the marker for $path is not followed by a \`\`\`go or \`\`\`ts block"
       continue
     fi
     quoted=$((quoted + 1))
-    src="$fixture/$path"
+    if [ "$lang" = ts ]; then root=$fixture_ts; else root=$fixture; fi
+    src="$root/$path"
     if [ ! -f "$src" ]; then
       fail "$ref: quotes $path, which is not a fixture file"
     elif ! cmp -s "$src" "$out/$n"; then
@@ -69,4 +75,4 @@ for ref in skills/*/references/*.md; do
   checked=$((checked + quoted))
 done
 
-finish "$checked quoted fixture files match $fixture"
+finish "$checked quoted fixture files match $fixture and $fixture_ts"

@@ -2,19 +2,19 @@
 
 package authz
 
-// CanManageOrg is the vulnerable version of the check in authz.go, kept so
-// CI can prove FuzzCanManageOrg catches it. It is built only with
+// CanEditProject is the vulnerable version of the check in authz.go, kept so
+// CI can prove FuzzCanEditProject catches it. It is built only with
 // `-tags vulnerable` and never ships in the default build.
 //
-// It has the two bugs the deny-by-default version fixes: it fails open when
-// the target organization could not be resolved (orgID == ""), and it checks
-// membership of the organization where the admin role is required.
-func CanManageOrg(u User, orgID string) bool {
-	if orgID == "" {
+// It has the two bugs the deny-by-default version fixes: on a project with no
+// owner yet, the owner check matches any caller with no ID ("" == ""), and it
+// lets any non-viewer of the organization in where the admin role is required.
+func CanEditProject(c Caller, p Project) bool {
+	if p.OrgID == "" {
+		return false
+	}
+	if c.Role != RoleViewer && c.OrgID == p.OrgID {
 		return true
 	}
-	if u.IsSuperAdmin {
-		return true
-	}
-	return u.OrgID == orgID
+	return c.ID == p.OwnerID
 }

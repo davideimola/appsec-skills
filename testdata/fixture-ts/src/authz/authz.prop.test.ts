@@ -3,6 +3,9 @@ import { test } from "vitest";
 import { canEditProject } from "./authz.js";
 import type { Caller, Project, Role } from "./project.js";
 
+// The property's arguments, as a tuple, so kept examples type-check.
+type Example = [string, string, Role, string, string, boolean, boolean];
+
 // The deny-by-default property on inputs nobody thought of. The table tests
 // cover the cases we know; this covers the rest.
 //
@@ -34,7 +37,7 @@ test("canEditProject grants only what the rule allows", () => {
     {
       // Counterexamples found by a failing run, kept as regression cases:
       // fast-check replays them first on every run.
-      examples: [],
+      examples: [] as Example[],
     },
   );
 });
